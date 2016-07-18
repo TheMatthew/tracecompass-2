@@ -12,6 +12,8 @@
 
 package org.eclipse.tracecompass.statesystem.core;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -433,4 +435,20 @@ public interface ITmfStateSystem {
      */
     @NonNull ITmfStateInterval querySingleState(long t, int attributeQuark)
             throws StateSystemDisposedException;
+
+    /**
+     * Iterator over the intervals of a given attribute
+     *
+     * @param quark
+     *            the key to the attribute to iterate over
+     * @param start
+     *            the begin of the range of intervals to iterate over
+     * @param end
+     *            the end of the range of intervals to iterate over
+     * @return an Iterator over the intervals of a given attribute, with
+     *         intervals ordered
+     */
+    default Iterator<ITmfStateInterval> getIteratorOverQuark(int quark, long start, long end) {
+        return Collections.EMPTY_LIST.iterator();
+    }
 }

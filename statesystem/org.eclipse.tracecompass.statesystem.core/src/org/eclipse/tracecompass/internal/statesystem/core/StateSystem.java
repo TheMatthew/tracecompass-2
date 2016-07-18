@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -152,9 +153,9 @@ public class StateSystem implements ITmfStateSystemBuilder {
         backend.dispose();
     }
 
-    //--------------------------------------------------------------------------
-    //        General methods related to the attribute tree
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
+    // General methods related to the attribute tree
+    // --------------------------------------------------------------------------
 
     /**
      * Get the attribute tree associated with this state system. This should be
@@ -196,9 +197,9 @@ public class StateSystem implements ITmfStateSystemBuilder {
         return getAttributeTree().getFullAttributePathArray(attributeQuark);
     }
 
-    //--------------------------------------------------------------------------
-    //        Methods related to the storage backend
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
+    // Methods related to the storage backend
+    // --------------------------------------------------------------------------
 
     @Override
     public long getStartTime() {
@@ -238,9 +239,9 @@ public class StateSystem implements ITmfStateSystemBuilder {
         finishedLatch.countDown(); /* Mark the history as finished building */
     }
 
-    //--------------------------------------------------------------------------
-    //        Quark-retrieving methods
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
+    // Quark-retrieving methods
+    // --------------------------------------------------------------------------
 
     @Override
     public int getQuarkAbsolute(String... attribute)
@@ -330,7 +331,7 @@ public class StateSystem implements ITmfStateSystemBuilder {
         if (remainder.isEmpty()) {
             if (element.equals(WILDCARD)) {
                 builder.addAll(getSubAttributes(quark, false));
-            } else if (element.equals(PARENT)){
+            } else if (element.equals(PARENT)) {
                 builder.add(getParentAttributeQuark(quark));
             } else {
                 int subQuark = optQuarkRelative(quark, element);
@@ -340,10 +341,11 @@ public class StateSystem implements ITmfStateSystemBuilder {
             }
         } else {
             if (element.equals(WILDCARD)) {
-                for (@NonNull Integer subquark : getSubAttributes(quark, false)) {
+                for (@NonNull
+                Integer subquark : getSubAttributes(quark, false)) {
                     getQuarks(builder, subquark, remainder);
                 }
-            } else if (element.equals(PARENT)){
+            } else if (element.equals(PARENT)) {
                 getQuarks(builder, getParentAttributeQuark(quark), remainder);
             } else {
                 int subQuark = optQuarkRelative(quark, element);
@@ -354,9 +356,9 @@ public class StateSystem implements ITmfStateSystemBuilder {
         }
     }
 
-    //--------------------------------------------------------------------------
-    //        Methods related to insertions in the history
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
+    // Methods related to insertions in the history
+    // --------------------------------------------------------------------------
 
     @Override
     public void modifyAttribute(long t, @NonNull ITmfStateValue value, int attributeQuark)
@@ -442,7 +444,7 @@ public class StateSystem implements ITmfStateSystemBuilder {
 
         if (stackDepth <= 0) {
             /* This on the other hand should not happen... */
-            throw new StateValueTypeException(getSSID() + " Quark:" + attributeQuark + ", Stack depth:" + stackDepth);  //$NON-NLS-1$//$NON-NLS-2$
+            throw new StateValueTypeException(getSSID() + " Quark:" + attributeQuark + ", Stack depth:" + stackDepth); //$NON-NLS-1$//$NON-NLS-2$
         }
 
         /* The attribute should already exist at this point */
@@ -498,9 +500,9 @@ public class StateSystem implements ITmfStateSystemBuilder {
         }
     }
 
-    //--------------------------------------------------------------------------
-    //        "Current" query/update methods
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
+    // "Current" query/update methods
+    // --------------------------------------------------------------------------
 
     @Override
     public ITmfStateValue queryOngoingState(int attributeQuark) {
@@ -529,9 +531,9 @@ public class StateSystem implements ITmfStateSystemBuilder {
         transState.replaceOngoingState(newStateIntervals);
     }
 
-    //--------------------------------------------------------------------------
-    //        Regular query methods (sent to the back-end)
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
+    // Regular query methods (sent to the back-end)
+    // --------------------------------------------------------------------------
 
     @Override
     public synchronized List<ITmfStateInterval> queryFullState(long t)
@@ -540,7 +542,7 @@ public class StateSystem implements ITmfStateSystemBuilder {
             throw new StateSystemDisposedException();
         }
 
-        LOGGER.info(() -> "[StateSystem:FullQueryStart] ssid=" + this.getSSID() + ", ts=" + t);  //$NON-NLS-1$//$NON-NLS-2$
+        LOGGER.info(() -> "[StateSystem:FullQueryStart] ssid=" + this.getSSID() + ", ts=" + t); //$NON-NLS-1$//$NON-NLS-2$
 
         final int nbAttr = getNbAttributes();
         List<@Nullable ITmfStateInterval> stateInfo = new ArrayList<>(nbAttr);
@@ -569,7 +571,7 @@ public class StateSystem implements ITmfStateSystemBuilder {
                 throw new IllegalStateException("Incoherent interval storage"); //$NON-NLS-1$
             }
         }
-        LOGGER.info(() -> "[StateSystem:FullQueryEnd]");  //$NON-NLS-1$
+        LOGGER.info(() -> "[StateSystem:FullQueryEnd]"); //$NON-NLS-1$
         return stateInfo;
     }
 
@@ -580,7 +582,7 @@ public class StateSystem implements ITmfStateSystemBuilder {
             throw new StateSystemDisposedException();
         }
 
-        LOGGER.info(() -> "[StateSystem:SingleQueryStart] ssid=" + this.getSSID() + ", ts=" + t + ", attribute=" + attributeQuark);  //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$
+        LOGGER.info(() -> "[StateSystem:SingleQueryStart] ssid=" + this.getSSID() + ", ts=" + t + ", attribute=" + attributeQuark); //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$
 
         ITmfStateInterval ret = transState.getIntervalAt(t, attributeQuark);
         if (ret == null) {
@@ -598,7 +600,7 @@ public class StateSystem implements ITmfStateSystemBuilder {
              */
             throw new IllegalStateException("Incoherent interval storage"); //$NON-NLS-1$
         }
-        LOGGER.info(() -> "[StateSystem:SingleQueryEnd]");  //$NON-NLS-1$
+        LOGGER.info(() -> "[StateSystem:SingleQueryEnd]"); //$NON-NLS-1$
         return ret;
     }
 
@@ -607,9 +609,45 @@ public class StateSystem implements ITmfStateSystemBuilder {
         backend.removeFiles();
     }
 
-    //--------------------------------------------------------------------------
-    //        Debug methods
-    //--------------------------------------------------------------------------
+    @Override
+    public Iterator<ITmfStateInterval> getIteratorOverQuark(int quark, long start, long end) {
+        if (end < start) {
+            throw new TimeRangeException("iterateOverQuark: end < start !"); //$NON-NLS-1$
+        }
+
+        if (start < getStartTime()) {
+            throw new TimeRangeException("iterateOverQuark: start < ss.getStartTime !"); //$NON-NLS-1$
+        }
+
+        return new Iterator<ITmfStateInterval>() {
+            ITmfStateInterval fPrevious = null;
+
+            @Override
+            public boolean hasNext() {
+                if (fPrevious == null) {
+                    /* iteration has not yet started */
+                    return end <= getCurrentEndTime();
+                }
+                return fPrevious.getEndTime() < end;
+            }
+
+            /* Not thread safe! */
+            @Override
+            public ITmfStateInterval next() {
+                long queryTime = fPrevious == null ? start : fPrevious.getEndTime() + 1;
+                try {
+                    fPrevious = querySingleState(queryTime, quark);
+                } catch (TimeRangeException | StateSystemDisposedException e) {
+                    Activator.getDefault().logError(e.getMessage());
+                }
+                return fPrevious;
+            }
+        };
+    }
+
+    // --------------------------------------------------------------------------
+    // Debug methods
+    // --------------------------------------------------------------------------
 
     static void logMissingInterval(int attribute, long timestamp) {
         Activator.getDefault().logInfo("No data found in history for attribute " + //$NON-NLS-1$

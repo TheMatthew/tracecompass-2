@@ -21,6 +21,7 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.tracecompass.internal.statesystem.core.StateSystem;
@@ -296,6 +297,34 @@ public class StateSystemPushPopTest {
 
         } catch (AttributeNotFoundException | TimeRangeException | StateSystemDisposedException e) {
             fail(errMsg + e.toString());
+        }
+    }
+
+    /**
+     * Test that iterator returns the correct intervals:
+     * intervals for the correct quark,
+     * ordered intervals
+     * intervals covering the correct time range
+     */
+    @Test
+    public void testIteratorOverQuark() {
+        Iterator<ITmfStateInterval> iterator;
+        ITmfStateInterval prevInterval, currInterval = null;
+        for (int i = 0; i < ss.getNbAttributes(); i++) {
+            prevInterval = null;
+            iterator = ss.getIteratorOverQuark(i, ss.getStartTime(), ss.getCurrentEndTime());
+            while (iterator.hasNext()) {
+                currInterval = iterator.next();
+                assertEquals(i, currInterval.getAttribute());
+                if (prevInterval == null) {
+                    assertEquals(currInterval.getStartTime(), ss.getStartTime());
+                } else {
+                    assertEquals(prevInterval.getEndTime() + 1, currInterval.getStartTime());
+                }
+                prevInterval = currInterval;
+            }
+            assertNotNull("Iterator should have returned at least one interval", currInterval);
+            assertEquals(ss.getCurrentEndTime(), currInterval.getEndTime());
         }
     }
 }
