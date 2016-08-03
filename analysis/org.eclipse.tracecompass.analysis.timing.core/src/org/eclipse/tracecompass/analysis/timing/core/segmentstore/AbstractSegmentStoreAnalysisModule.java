@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ListenerList;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.segmentstore.core.ISegment;
@@ -47,6 +48,14 @@ public abstract class AbstractSegmentStoreAnalysisModule extends TmfAbstractAnal
     private final ListenerList fListeners = new ListenerList(ListenerList.IDENTITY);
 
     private @Nullable ISegmentStore<ISegment> fSegmentStore;
+
+    /**
+     * @since 2.0
+     */
+    @Override
+    public @NonNull String getProviderId() {
+        return getId();
+    }
 
     @Override
     public void addListener(IAnalysisProgressListener listener) {

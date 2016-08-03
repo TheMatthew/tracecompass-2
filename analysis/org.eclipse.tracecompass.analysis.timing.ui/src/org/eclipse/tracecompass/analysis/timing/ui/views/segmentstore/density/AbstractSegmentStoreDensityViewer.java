@@ -9,6 +9,7 @@
 
 package org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.density;
 
+import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 import static org.eclipse.tracecompass.common.core.NonNullUtils.nullToEmptyString;
 
 import java.text.Format;
@@ -18,7 +19,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -29,13 +32,19 @@ import org.eclipse.tracecompass.analysis.timing.core.segmentstore.IAnalysisProgr
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.ISegmentStoreProvider;
 import org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.SubSecondTimeWithUnitFormat;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.FilterManager;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.ISegmentFilter;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.SegmentFilter;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.signal.TmfSegmentFilterAppliedSignal;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.segmentstore.density.MouseDragZoomProvider;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.segmentstore.density.MouseSelectionProvider;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.segmentstore.density.SimpleTooltipProvider;
 import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
 import org.eclipse.tracecompass.segmentstore.core.SegmentComparators;
+import org.eclipse.tracecompass.segmentstore.core.SegmentStoreFactory;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
+import org.eclipse.tracecompass.tmf.core.signal.TmfSignal;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSignalHandler;
 import org.eclipse.tracecompass.tmf.core.signal.TmfTraceClosedSignal;
 import org.eclipse.tracecompass.tmf.core.signal.TmfTraceOpenedSignal;
@@ -81,6 +90,7 @@ public abstract class AbstractSegmentStoreDensityViewer extends TmfViewer {
     private @Nullable ISegmentStoreProvider fSegmentStoreProvider;
     private TmfTimeRange fCurrentTimeRange = TmfTimeRange.NULL_RANGE;
     private List<ISegmentStoreDensityViewerDataListener> fListeners;
+    private @Nullable ISegmentFilter fFilter;
 
     /**
      * Constructs a new density viewer.
@@ -215,8 +225,8 @@ public abstract class AbstractSegmentStoreDensityViewer extends TmfViewer {
         if (segmentProvider == null) {
             return null;
         }
-        final ISegmentStore<ISegment> segStore = segmentProvider.getSegmentStore();
-        if (segStore == null) {
+        final ISegmentStore<ISegment> segStore = getSegmentStore(segmentProvider);
+        if (segStore == null || segStore.isEmpty()) {
             return null;
         }
 
@@ -396,5 +406,59 @@ public abstract class AbstractSegmentStoreDensityViewer extends TmfViewer {
      */
     public void removeDataListener(ISegmentStoreDensityViewerDataListener dataListener) {
         fListeners.remove(dataListener);
+    }
+
+    /**
+     * @param signal
+     *            Signal received when a filter is applied to the segment store
+     *            provider
+     * @since 2.0
+     */
+    @TmfSignalHandler
+    public synchronized void segmentFilterApplied(TmfSignal signal) {
+        if (signal instanceof TmfSegmentFilterAppliedSignal) {
+            @Nullable
+            ISegmentStoreProvider segmentProvider = fSegmentStoreProvider;
+            ITmfTrace trace = TmfTraceManager.getInstance().getActiveTrace();
+            ISegmentFilter filter = ((TmfSegmentFilterAppliedSignal) signal).getFilter();
+            if (filter instanceof SegmentFilter) {
+                SegmentFilter segmentFilter = (SegmentFilter) filter;
+                if (trace.equals(((TmfSegmentFilterAppliedSignal) signal).getTrace())
+                        && segmentProvider != null
+                        && segmentProvider.getProviderId().equals(segmentFilter.getSegmentProviderId())) {
+                    fFilter = filter;
+                    updateWithRange(fCurrentTimeRange);
+                }
+            }
+        }
+    }
+
+    /**
+     * @since 1.1
+     */
+    private @Nullable ISegmentStore<@NonNull ISegment> getSegmentStore(ISegmentStoreProvider provider) {
+        setFilter(provider);
+        final @Nullable ISegmentStore<@NonNull ISegment> segmentStore = provider.getSegmentStore();
+        return applyFilter(segmentStore);
+    }
+
+    /**
+     * @param segmentStore
+     * @return
+     */
+    private ISegmentStore<@NonNull ISegment> applyFilter(@Nullable final ISegmentStore<@NonNull ISegment> segmentStore) {
+        if (segmentStore != null) {
+            if( fFilter == null) {
+                return segmentStore;
+            }
+            return SegmentStoreFactory.createSegmentStore(segmentStore.stream().filter(segment -> checkNotNull(fFilter).matches(segment)).collect(Collectors.toList()).toArray());
+        }
+        return SegmentStoreFactory.createSegmentStore();
+    }
+
+    void setFilter(@Nullable ISegmentStoreProvider provider) {
+        if (provider != null) {
+            fFilter = FilterManager.getInstance().getSegmentFilter(provider.getProviderId());
+        }
     }
 }

@@ -106,6 +106,11 @@ public abstract class CallGraphAnalysis extends TmfAbstractAnalysisModule implem
     }
 
     @Override
+    public @NonNull String getProviderId() {
+        return getId();
+    }
+
+    @Override
     public @NonNull String getHelpText() {
         String msg = Messages.CallGraphAnalysis_Description;
         return (msg != null) ? msg : super.getHelpText();

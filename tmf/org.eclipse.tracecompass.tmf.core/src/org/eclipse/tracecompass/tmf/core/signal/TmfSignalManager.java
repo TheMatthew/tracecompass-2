@@ -140,6 +140,7 @@ public class TmfSignalManager {
         int signalId = fSignalId++;
         sendSignal(new TmfStartSynchSignal(signalId));
         signal.setReference(signalId);
+        signal.toString();
         sendSignal(signal);
         sendSignal(new TmfEndSynchSignal(signalId));
     }

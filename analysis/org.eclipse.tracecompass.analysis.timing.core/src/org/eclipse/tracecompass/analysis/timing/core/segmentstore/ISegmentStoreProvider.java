@@ -54,4 +54,12 @@ public interface ISegmentStoreProvider {
      */
     @Nullable ISegmentStore<ISegment> getSegmentStore();
 
+    /**
+     * Get the ID of the segment store provider
+     *
+     * @return The id
+     * @since 2.0
+     */
+    String getProviderId();
+
 }

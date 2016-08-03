@@ -13,6 +13,8 @@ import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.text.DecimalFormat;
+import java.text.Format;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -33,6 +35,7 @@ import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.core.segment.ISegmentAspect;
+import org.eclipse.tracecompass.tmf.core.timestamp.TmfTimestampFormat;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 
 import com.google.common.collect.ImmutableList;
@@ -52,7 +55,7 @@ public class SystemCallLatencyAnalysis extends AbstractSegmentStoreAnalysisEvent
     private static final String DATA_FILENAME = "latency-analysis.dat"; //$NON-NLS-1$
 
     private static final Collection<ISegmentAspect> BASE_ASPECTS =
-            ImmutableList.of(SyscallNameAspect.INSTANCE);
+            ImmutableList.of(StartAspect.INSTANCE, EndAspect.INSTANCE, DurationAspect.INSTANCE, SyscallNameAspect.INSTANCE);
 
     @Override
     public String getId() {
@@ -200,6 +203,88 @@ public class SystemCallLatencyAnalysis extends AbstractSegmentStoreAnalysisEvent
                 return ((SystemCall) segment).getName();
             }
             return EMPTY_STRING;
+        }
+    }
+
+    private static final class StartAspect implements ISegmentAspect {
+        public static final ISegmentAspect INSTANCE = new StartAspect();
+
+        private StartAspect() {
+        }
+
+        @Override
+        public String getHelpText() {
+            return checkNotNull("Start Time");
+        }
+
+        @Override
+        public String getName() {
+            return checkNotNull("Start Time");
+        }
+
+        @Override
+        public @Nullable Comparator<?> getComparator() {
+            return null;
+        }
+
+        @Override
+        public @Nullable String resolve(ISegment segment) {
+            return TmfTimestampFormat.getDefaulTimeFormat().format(segment.getStart());
+        }
+    }
+
+    private static final class EndAspect implements ISegmentAspect {
+        public static final ISegmentAspect INSTANCE = new EndAspect();
+
+        private EndAspect() {
+        }
+
+        @Override
+        public String getHelpText() {
+            return checkNotNull("End Time");
+        }
+
+        @Override
+        public String getName() {
+            return checkNotNull("End Time");
+        }
+
+        @Override
+        public @Nullable Comparator<?> getComparator() {
+            return null;
+        }
+
+        @Override
+        public @Nullable String resolve(ISegment segment) {
+            return TmfTimestampFormat.getDefaulTimeFormat().format(segment.getEnd());
+        }
+    }
+
+    private static final Format FORMATTER = new DecimalFormat("###,###.##");
+    private static final class DurationAspect implements ISegmentAspect {
+        public static final ISegmentAspect INSTANCE = new DurationAspect();
+
+        private DurationAspect() {
+        }
+
+        @Override
+        public String getHelpText() {
+            return checkNotNull("Duration");
+        }
+
+        @Override
+        public String getName() {
+            return checkNotNull("Duration");
+        }
+
+        @Override
+        public @Nullable Comparator<?> getComparator() {
+            return null;
+        }
+
+        @Override
+        public @Nullable String resolve(ISegment segment) {
+            return FORMATTER.format(segment.getLength());
         }
     }
 }

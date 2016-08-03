@@ -13,17 +13,21 @@
 
 package org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.scatter;
 
+import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
+
 import java.text.Format;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Composite;
@@ -33,12 +37,18 @@ import org.eclipse.tracecompass.analysis.timing.core.segmentstore.ISegmentStoreP
 import org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.SubSecondTimeWithUnitFormat;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.Activator;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.FilterManager;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.ISegmentFilter;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.SegmentFilter;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.signal.TmfSegmentFilterAppliedSignal;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.segmentstore.scatter.Messages;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.segmentstore.scatter.SegmentStoreScatterGraphTooltipProvider;
 import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
 import org.eclipse.tracecompass.segmentstore.core.SegmentComparators;
+import org.eclipse.tracecompass.segmentstore.core.SegmentStoreFactory;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
+import org.eclipse.tracecompass.tmf.core.signal.TmfSignal;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSignalHandler;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSignalManager;
 import org.eclipse.tracecompass.tmf.core.signal.TmfTraceClosedSignal;
@@ -98,7 +108,7 @@ public abstract class AbstractSegmentStoreScatterGraphViewer extends TmfCommonXL
                 return new Status(IStatus.WARNING, Activator.PLUGIN_ID, "segment provider not available"); //$NON-NLS-1$
             }
 
-            final ISegmentStore<ISegment> segStore = segmentProvider.getSegmentStore();
+            final ISegmentStore<ISegment> segStore = getSegmentStore(segmentProvider);
             if (segStore == null) {
                 setWindowRange(startTimeInNanos, endTimeInNanos);
                 redraw(statusMonitor, startTimeInNanos, startTimeInNanos, Collections.EMPTY_LIST);
@@ -201,7 +211,7 @@ public abstract class AbstractSegmentStoreScatterGraphViewer extends TmfCommonXL
         public void onComplete(ISegmentStoreProvider segmentProvider, ISegmentStore<ISegment> segmentStore) {
             // Only update the model if trace that was analyzed is active trace
             if (segmentProvider.equals(getSegmentProvider())) {
-                updateModel(segmentStore);
+                updateModel(getSegmentStore(segmentProvider));
                 updateRange(TmfTraceManager.getInstance().getCurrentTraceContext().getWindowRange());
             }
         }
@@ -226,6 +236,8 @@ public abstract class AbstractSegmentStoreScatterGraphViewer extends TmfCommonXL
     private @Nullable ISegmentStoreProvider fSegmentProvider;
 
     private @Nullable Job fCompactingJob;
+
+    @Nullable private ISegmentFilter fFilter;
 
     // ------------------------------------------------------------------------
     // Constructor
@@ -401,7 +413,7 @@ public abstract class AbstractSegmentStoreScatterGraphViewer extends TmfCommonXL
             updateModel(null);
             return;
         }
-        ISegmentStore<ISegment> segStore = provider.getSegmentStore();
+        ISegmentStore<ISegment> segStore = getSegmentStore(provider);
         // If results are not null, then segment store is completed and model
         // can be updated
         if (segStore != null) {
@@ -528,11 +540,62 @@ public abstract class AbstractSegmentStoreScatterGraphViewer extends TmfCommonXL
         }
     }
 
+    /**
+     * @param signal
+     *            Signal received when a filter is applied to the segment store
+     *            provider
+     * @since 2.0
+     */
+    @TmfSignalHandler
+    public synchronized void segmentFilterApplied(TmfSignal signal) {
+        if (signal instanceof TmfSegmentFilterAppliedSignal) {
+            @Nullable
+            ISegmentStoreProvider segmentProvider = getSegmentProvider();
+            ITmfTrace trace = TmfTraceManager.getInstance().getActiveTrace();
+            ISegmentFilter filter = ((TmfSegmentFilterAppliedSignal) signal).getFilter();
+            if (filter instanceof SegmentFilter) {
+                SegmentFilter segmentFilter = (SegmentFilter) filter;
+                if (trace.equals(((TmfSegmentFilterAppliedSignal) signal).getTrace())
+                        && segmentProvider != null
+                        && segmentProvider.getProviderId().equals(segmentFilter.getSegmentProviderId())) {
+                    fFilter = filter;
+                    setData(getSegmentProvider());
+                }
+            }
+        }
+    }
+
     private @Nullable ISegmentStoreProvider getSegmentProvider() {
         return fSegmentProvider;
     }
 
     private void setSegmentProvider(ISegmentStoreProvider provider) {
         fSegmentProvider = provider;
+    }
+
+    private @Nullable ISegmentStore<@NonNull ISegment> getSegmentStore(ISegmentStoreProvider provider) {
+        setFilter(provider);
+        final @Nullable ISegmentStore<@NonNull ISegment> segmentStore = provider.getSegmentStore();
+        return applyFilter(segmentStore);
+    }
+
+    /**
+     * @param segmentStore
+     * @return
+     */
+    private ISegmentStore<@NonNull ISegment> applyFilter(final @Nullable ISegmentStore<@NonNull ISegment> segmentStore) {
+        if (segmentStore != null) {
+            if( fFilter == null) {
+                return segmentStore;
+            }
+            return SegmentStoreFactory.createSegmentStore(segmentStore.stream().filter(segment -> checkNotNull(fFilter).matches(segment)).collect(Collectors.toList()).toArray());
+        }
+        return SegmentStoreFactory.createSegmentStore();
+    }
+
+    void setFilter(@Nullable ISegmentStoreProvider provider) {
+        if (provider != null) {
+            fFilter = FilterManager.getInstance().getSegmentFilter(provider.getProviderId());
+        }
     }
 }

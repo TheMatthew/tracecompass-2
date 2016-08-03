@@ -421,7 +421,7 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
     }
 
     /**
-     * @since 1.2
+     * @since 2.0
      */
     protected void setStats(List<ITmfTreeViewerEntry> entryList, AbstractSegmentStatisticsAnalysis module, String rootName) {
         boolean isSelection = !rootName.equals(getTotalLabel()) ? true : false;
@@ -453,7 +453,7 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
      * Get the type label
      *
      * @return the label
-     * @since 1.2
+     * @since 2.0
      */
     protected String getTypeLabel() {
         return checkNotNull(Messages.AbstractSegmentStoreStatisticsViewer_types);
@@ -463,7 +463,7 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
      * Get the total column label
      *
      * @return the totals column label
-     * @since 1.2
+     * @since 2.0
      */
     protected String getTotalLabel() {
         return checkNotNull(Messages.AbstractSegmentStoreStatisticsViewer_total);
@@ -473,7 +473,7 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
      * Get the selection column label
      *
      * @return The selection column label
-     * @since 1.2
+     * @since 2.0
      */
     protected String getSelectionLabel() {
         return checkNotNull(Messages.AbstractSegmentStoreStatisticsViewer_selection);

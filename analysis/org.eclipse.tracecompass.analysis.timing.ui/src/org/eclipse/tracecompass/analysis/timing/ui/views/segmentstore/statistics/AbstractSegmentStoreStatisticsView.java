@@ -104,7 +104,7 @@ public abstract class AbstractSegmentStoreStatisticsView extends TmfView {
      *
      * @param stream
      *            an output stream to write the TSV to
-     * @since 1.2
+     * @since 2.0
      */
     @VisibleForTesting
     protected void exportToTsv(@Nullable OutputStream stream) {

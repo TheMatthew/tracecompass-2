@@ -11,25 +11,25 @@
  *   Yuriy Vashchuk (yvashchuk@gmail.com) - Initial implementation
  *******************************************************************************/
 
-package org.eclipse.tracecompass.tmf.core.filter.model;
+package org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model;
 
 import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.tracecompass.tmf.core.filter.ITmfFilter;
-
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * <h4>This is Node Interface in the Filter Tree</h4>
+ * @since 1.1
  */
-public interface ITmfFilterTreeNode extends ITmfFilter {
+public interface ITmfFilterTreeNode extends ISegmentFilter {
 
     /**
      * <h4>Get the parent node of current node</h4>
      *
      * @return The parent node (null when the node has no parent).
      */
-    public ITmfFilterTreeNode getParent();
+    public @Nullable ITmfFilterTreeNode getParent();
 
     /**
      * <h4>Get the current node name</h4>
@@ -87,7 +87,7 @@ public interface ITmfFilterTreeNode extends ITmfFilter {
      *
      * @return The removed node.
      */
-    public ITmfFilterTreeNode removeChild(ITmfFilterTreeNode node);
+    public @Nullable ITmfFilterTreeNode removeChild(ITmfFilterTreeNode node);
 
     /**
      * <h4>Append a node to the current children</h4>
@@ -111,7 +111,7 @@ public interface ITmfFilterTreeNode extends ITmfFilter {
      *
      * @param parent The parent of current node.
      */
-    public void setParent(ITmfFilterTreeNode parent);
+    public void setParent(@Nullable ITmfFilterTreeNode parent);
 
     /**
      * <h4>Gets the list of valid children node names that could be added to the node</h4>
@@ -135,5 +135,5 @@ public interface ITmfFilterTreeNode extends ITmfFilter {
     /**
      * @return a clone of the node
      */
-    public ITmfFilterTreeNode clone();
+    public @Nullable ITmfFilterTreeNode clone();
 }
