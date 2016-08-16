@@ -66,10 +66,15 @@
             restorable="true">
       </view>
       <view
+
             category="org.eclipse.linuxtools.tmf.ui.views.category"
             class="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.statistics.CallGraphStatisticsView"
             id="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.statistics.callgraphStatistics"
-            name="Function statistics"
+            name="Function statistics"></view><view
+		
+            class="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.CallGraph"
+            id="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.cgraph"
+            name="Call Graph"
             restorable="true">
       </view>
    </extension>

@@ -73,7 +73,7 @@ public class CallGraphStatisticsViewer extends AbstractSegmentStoreStatisticsVie
 
                     return "0x" + Long.toHexString(address); //$NON-NLS-1$
                 } catch (NumberFormatException e) {
-                    e.printStackTrace();
+                    // that's fine
                 }
             }
             return original;

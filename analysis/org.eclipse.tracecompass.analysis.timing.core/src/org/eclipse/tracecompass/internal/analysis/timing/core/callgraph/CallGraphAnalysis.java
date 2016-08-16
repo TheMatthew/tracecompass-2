@@ -12,7 +12,9 @@ package org.eclipse.tracecompass.internal.analysis.timing.core.callgraph;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -92,6 +94,8 @@ public abstract class CallGraphAnalysis extends TmfAbstractAnalysisModule implem
      * function as children
      */
     private List<ThreadNode> fThreadNodes = new ArrayList<>();
+
+    private final List<Map<Long, CallGraphNode>> fCallGraphThreads = new ArrayList<>();
 
     /**
      * Default constructor
@@ -228,6 +232,7 @@ public abstract class CallGraphAnalysis extends TmfAbstractAnalysisModule implem
         } catch (StateSystemDisposedException error) {
             Activator.getInstance().logError(Messages.QueringStateSystemError, error);
         }
+        Map<Long, CallGraphNode> functions = new HashMap<>();
         try {
             long curTime = stateSystem.getStartTime();
             long limit = stateSystem.getCurrentEndTime();
@@ -254,7 +259,9 @@ public abstract class CallGraphAnalysis extends TmfAbstractAnalysisModule implem
                     AbstractCalledFunction segment = CalledFunctionFactory.create(intervalStart, intervalEnd + 1, depth, stateValue, processId, null);
                     fRootFunctions.add(segment);
                     AggregatedCalledFunction firstNode = new AggregatedCalledFunction(segment, fCurrentQuarks.size());
-                    if (!findChildren(segment, depth, stateSystem, fCurrentQuarks.size() + fCurrentQuarks.get(depth), firstNode, processId, monitor)) {
+                    CallGraphNode rootFunction = new CallGraphNode(stateValue.unboxLong(), segment.getLength(), segment.getProcessId());
+                    functions.put(stateValue.unboxLong(), rootFunction);
+                    if (!findChildren(segment, depth, stateSystem, fCurrentQuarks.size() + fCurrentQuarks.get(depth), firstNode, processId, functions, monitor)) {
                         return false;
                     }
                     init.addChild(firstNode);
@@ -267,6 +274,7 @@ public abstract class CallGraphAnalysis extends TmfAbstractAnalysisModule implem
             Activator.getInstance().logError(Messages.QueringStateSystemError, e);
             return false;
         }
+        fCallGraphThreads.add(functions);
         return true;
     }
 
@@ -291,7 +299,7 @@ public abstract class CallGraphAnalysis extends TmfAbstractAnalysisModule implem
      *            The progress monitor The progress monitor TODO: if stack size
      *            is an issue, convert to a stack instead of recursive function
      */
-    private boolean findChildren(AbstractCalledFunction node, int depth, ITmfStateSystem ss, int maxQuark, AggregatedCalledFunction aggregatedCalledFunction, int processId, IProgressMonitor monitor) {
+    private boolean findChildren(AbstractCalledFunction node, int depth, ITmfStateSystem ss, int maxQuark, AggregatedCalledFunction aggregatedCalledFunction, int processId, Map<Long, CallGraphNode> functions, IProgressMonitor monitor) {
         fStore.add(node);
         long curTime = node.getStart();
         long limit = node.getEnd();
@@ -319,10 +327,23 @@ public abstract class CallGraphAnalysis extends TmfAbstractAnalysisModule implem
                 }
                 AbstractCalledFunction segment = CalledFunctionFactory.create(intervalStart, intervalEnd + 1, node.getDepth() + 1, stateValue, processId, node);
                 AggregatedCalledFunction childNode = new AggregatedCalledFunction(segment, aggregatedCalledFunction);
+                CallGraphNode CgParentNode = functions.get(node.getSymbol());
+                CallGraphNode CgNode = functions.get(stateValue);
+                if (CgNode == null) {
+                    CgNode = new CallGraphNode(segment.getSymbol(), segment.getLength(), segment.getProcessId());
+                    functions.put(stateValue.unboxLong(), CgNode);
+                }
                 // Search for the children with the next quark.
-                findChildren(segment, depth + 1, ss, maxQuark, childNode, processId, monitor);
+
+                findChildren(segment, depth + 1, ss, maxQuark, childNode, processId, functions, monitor);
                 aggregatedCalledFunction.addChild(childNode);
                 node.addChild(segment);
+                CgNode.addParent(CgParentNode);
+                if (CgParentNode != null) {
+                    CgParentNode.addChild(CgNode);
+                }
+                functions.replace(stateValue.unboxLong(), CgNode);
+                functions.replace((long) node.getSymbol(), CgParentNode);
             }
             curTime = interval.getEndTime() + 1;
         }
@@ -412,4 +433,9 @@ public abstract class CallGraphAnalysis extends TmfAbstractAnalysisModule implem
         }
         return processId;
     }
+
+    public List<Map<Long, CallGraphNode>> getCallGraphThreads() {
+        return ImmutableList.copyOf(fCallGraphThreads);
+    }
+
 }
