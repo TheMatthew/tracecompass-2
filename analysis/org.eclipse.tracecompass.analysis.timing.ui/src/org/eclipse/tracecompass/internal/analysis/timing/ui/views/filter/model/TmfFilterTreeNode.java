@@ -34,7 +34,9 @@ import org.eclipse.tracecompass.segmentstore.core.ISegment;
 public abstract class TmfFilterTreeNode implements ITmfFilterTreeNode, Cloneable {
 
     private static final String[] VALID_CHILDREN = {
-            SegmentFilterMatchesNode.NODE_NAME
+            SegmentFilterMatchesNode.NODE_NAME,
+            TmfFilterAndNode.NODE_NAME,
+            TmfFilterOrNode.NODE_NAME
     };
 
     @Nullable private ITmfFilterTreeNode parent = null;

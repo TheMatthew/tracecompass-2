@@ -23,8 +23,10 @@ import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.ITmfFilterTreeNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.SegmentFilter;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.SegmentFilterMatchesNode;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterAndNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterAspectNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterNode;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterOrNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterRootNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterTreeNode;
 import org.eclipse.tracecompass.tmf.core.analysis.TmfAbstractAnalysisModule;
@@ -102,6 +104,22 @@ public class SegmentFilterContentHandler extends DefaultHandler {
         } else if (localName.equals(TmfFilterNode.NODE_NAME)) {
 
             node = new TmfFilterNode(atts.getValue(TmfFilterNode.NAME_ATTR));
+
+        } else if (localName.equals(TmfFilterAndNode.NODE_NAME)) {
+
+            node = new TmfFilterAndNode(null);
+            String value = atts.getValue(TmfFilterAndNode.NOT_ATTR);
+            if (value != null && value.equalsIgnoreCase(Boolean.TRUE.toString())) {
+                ((TmfFilterAndNode) node).setNot(true);
+            }
+
+        } else if (localName.equals(TmfFilterOrNode.NODE_NAME)) {
+
+            node = new TmfFilterOrNode(null);
+            String value = atts.getValue(TmfFilterOrNode.NOT_ATTR);
+            if (value != null && value.equalsIgnoreCase(Boolean.TRUE.toString())) {
+                ((TmfFilterOrNode) node).setNot(true);
+            }
 
         } else if (localName.equals(SegmentFilterMatchesNode.NODE_NAME)) {
 

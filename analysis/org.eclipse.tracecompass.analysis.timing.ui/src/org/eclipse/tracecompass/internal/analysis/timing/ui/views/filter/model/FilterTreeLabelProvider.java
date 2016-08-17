@@ -71,7 +71,17 @@ public class FilterTreeLabelProvider implements ILabelProvider {
             label.append(node.getNodeName()).append(' ').append(node.getFilterName() != null &&
                     !NonNullUtils.checkNotNull(node.getFilterName()).isEmpty() ? node.getFilterName() : Messages.FilterTreeLabelProvider_FilterNameHint);
 
-        } else if (element instanceof SegmentFilterMatchesNode) {
+        } else if (element instanceof TmfFilterAndNode) {
+
+            TmfFilterAndNode node = (TmfFilterAndNode) element;
+            label.append((node.isNot() ? NOT : EMPTY_STRING)).append(node.getNodeName());
+
+        } else if (element instanceof TmfFilterOrNode) {
+
+            TmfFilterOrNode node = (TmfFilterOrNode) element;
+            label.append(node.isNot() ? NOT : EMPTY_STRING).append(node.getNodeName());
+
+        }else if (element instanceof SegmentFilterMatchesNode) {
 
             SegmentFilterMatchesNode node = (SegmentFilterMatchesNode) element;
             label.append(node.isNot() ? NOT : EMPTY_STRING)

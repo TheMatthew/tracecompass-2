@@ -57,8 +57,10 @@ import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.F
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.FilterTreeLabelProvider;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.ITmfFilterTreeNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.SegmentFilterMatchesNode;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterAndNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterAspectNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterNode;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterOrNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterRootNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterTreeNode;
 import org.eclipse.tracecompass.internal.tmf.ui.Messages;
@@ -233,6 +235,10 @@ class FilterViewer extends Composite {
                     ITmfFilterTreeNode newNode = null;
                     if (TmfFilterNode.NODE_NAME.equals(child)) {
                         newNode = new TmfFilterNode(node, ""); //$NON-NLS-1$
+                    } else if (TmfFilterAndNode.NODE_NAME.equals(child)) {
+                        newNode = new TmfFilterAndNode(node);
+                    } else if (TmfFilterOrNode.NODE_NAME.equals(child)) {
+                        newNode = new TmfFilterOrNode(node);
                     } else if (SegmentFilterMatchesNode.NODE_NAME.equals(child)) {
                         newNode = new SegmentFilterMatchesNode(node);
                     }
@@ -261,6 +267,10 @@ class FilterViewer extends Composite {
 
         if (node instanceof TmfFilterNode) {
             new FilterNodeComposite(fComposite, (TmfFilterNode) node);
+        } else if (node instanceof TmfFilterAndNode) {
+            new FilterAndNodeComposite(fComposite, (TmfFilterAndNode) node);
+        } else if (node instanceof TmfFilterOrNode) {
+            new FilterOrNodeComposite(fComposite, (TmfFilterOrNode) node);
         } else if (node instanceof SegmentFilterMatchesNode) {
             new FilterMatchesNodeComposite(fComposite, (SegmentFilterMatchesNode) node);
         } else {
@@ -553,6 +563,56 @@ class FilterViewer extends Composite {
                         fNode.setFilterName(fNameText.getText());
                         fViewer.refresh(fNode);
                     }
+                }
+            });
+        }
+    }
+
+private class FilterAndNodeComposite extends FilterBaseNodeComposite {
+        TmfFilterAndNode fNode;
+        Button fNotButton;
+
+        FilterAndNodeComposite(Composite parent, TmfFilterAndNode node) {
+            super(parent);
+            fNode = node;
+
+            Label label = new Label(this, SWT.NONE);
+            label.setBackground(Display.getCurrent().getSystemColor(SWT.COLOR_WHITE));
+            label.setText("not");
+
+            fNotButton = new Button(this, SWT.CHECK);
+            fNotButton.setBackground(Display.getCurrent().getSystemColor(SWT.COLOR_WHITE));
+            fNotButton.setSelection(fNode.isNot());
+            fNotButton.addSelectionListener(new SelectionAdapter() {
+                @Override
+                public void widgetSelected(SelectionEvent e) {
+                    fNode.setNot(fNotButton.getSelection());
+                    fViewer.refresh(fNode);
+                }
+            });
+        }
+    }
+
+    private class FilterOrNodeComposite extends FilterBaseNodeComposite {
+        TmfFilterOrNode fNode;
+        Button fNotButton;
+
+        FilterOrNodeComposite(Composite parent, TmfFilterOrNode node) {
+            super(parent);
+            fNode = node;
+
+            Label label = new Label(this, SWT.NONE);
+            label.setBackground(Display.getCurrent().getSystemColor(SWT.COLOR_WHITE));
+            label.setText("not");
+
+            fNotButton = new Button(this, SWT.CHECK);
+            fNotButton.setBackground(Display.getCurrent().getSystemColor(SWT.COLOR_WHITE));
+            fNotButton.setSelection(fNode.isNot());
+            fNotButton.addSelectionListener(new SelectionAdapter() {
+                @Override
+                public void widgetSelected(SelectionEvent e) {
+                    fNode.setNot(fNotButton.getSelection());
+                    fViewer.refresh(fNode);
                 }
             });
         }

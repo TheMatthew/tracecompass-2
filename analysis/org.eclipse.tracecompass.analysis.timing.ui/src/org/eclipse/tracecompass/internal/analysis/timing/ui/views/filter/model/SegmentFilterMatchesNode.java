@@ -8,6 +8,8 @@
  *******************************************************************************/
 package org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -156,5 +158,10 @@ public class SegmentFilterMatchesNode extends TmfFilterAspectNode {
      */
     public void setNot(boolean not) {
         fNot = not;
+    }
+
+    @Override
+    public List<String> getValidChildren() {
+        return new ArrayList<>(0);
     }
 }

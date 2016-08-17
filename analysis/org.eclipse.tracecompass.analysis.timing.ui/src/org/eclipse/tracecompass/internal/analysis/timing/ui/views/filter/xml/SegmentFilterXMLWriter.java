@@ -29,8 +29,10 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.ITmfFilterTreeNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.SegmentFilter;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.SegmentFilterMatchesNode;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterAndNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterAspectNode;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterNode;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.model.TmfFilterOrNode;
 import org.eclipse.tracecompass.tmf.core.segment.ISegmentAspect;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -85,6 +87,16 @@ public class SegmentFilterXMLWriter {
                 SegmentFilter node = (SegmentFilter) treenode;
                 element.setAttribute(SegmentFilter.PROVIDER_ID_ATTR, node.getSegmentProviderId());
                 element.setAttribute(SegmentFilter.MATCH_ANY_ATTR, Boolean.toString(node.isMatchAny()));
+        } else if (treenode instanceof TmfFilterAndNode) {
+
+            TmfFilterAndNode node = (TmfFilterAndNode) treenode;
+            element.setAttribute(TmfFilterAndNode.NOT_ATTR, Boolean.toString(node.isNot()));
+
+        } else if (treenode instanceof TmfFilterOrNode) {
+
+            TmfFilterOrNode node = (TmfFilterOrNode) treenode;
+            element.setAttribute(TmfFilterOrNode.NOT_ATTR, Boolean.toString(node.isNot()));
+
         } else if (treenode instanceof SegmentFilterMatchesNode) {
 
             SegmentFilterMatchesNode node = (SegmentFilterMatchesNode) treenode;
