@@ -28,6 +28,23 @@
                class="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.CallGraphAnalysisUI">
          </analysisModuleClass>
       </output>
+      <module
+            analysis_module="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.CallGraphStatisticsAnalysisUI"
+            automatic="false"
+            id="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.callgraphanalysis.statistics"
+            name="Function Duration Statistics">
+         <tracetype
+               applies="true"
+               class="org.eclipse.tracecompass.tmf.core.trace.TmfTrace">
+         </tracetype>
+      </module>
+      <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.statistics.callgraphStatistics">
+         <analysisModuleClass
+               class="org.eclipse.tracecompass.internal.analysis.timing.core.callgraph.CallGraphStatisticsAnalysis">
+         </analysisModuleClass>
+      </output>
    </extension>
    <extension
          point="org.eclipse.ui.views">
@@ -46,6 +63,13 @@
             icon="icons/elcl16/flame.png"
             id="org.eclipse.tracecompass.internal.analysis.timing.ui.flamegraph.flamegraphView"
             name="%view.flameGraph"
+            restorable="true">
+      </view>
+      <view
+            category="org.eclipse.linuxtools.tmf.ui.views.category"
+            class="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.statistics.CallGraphStatisticsView"
+            id="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.statistics.callgraphStatistics"
+            name="Function statistics"
             restorable="true">
       </view>
    </extension>
