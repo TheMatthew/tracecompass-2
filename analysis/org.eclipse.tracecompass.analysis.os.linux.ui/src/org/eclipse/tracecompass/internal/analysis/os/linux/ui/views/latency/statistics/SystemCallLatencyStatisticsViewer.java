@@ -47,8 +47,7 @@ public class SystemCallLatencyStatisticsViewer extends AbstractSegmentStoreStati
      */
     @Override
     protected @Nullable TmfAbstractAnalysisModule createStatisticsAnalysiModule() {
-        SystemCallLatencyStatisticsAnalysisModule module = new SystemCallLatencyStatisticsAnalysisModule();
-        return module;
+        return new SystemCallLatencyStatisticsAnalysisModule();
     }
 
     @Override
@@ -60,7 +59,6 @@ public class SystemCallLatencyStatisticsViewer extends AbstractSegmentStoreStati
     protected @NonNull final String getTypeLabel() {
         return SYSCALL_LEVEL;
     }
-
 
 
 }

@@ -8,13 +8,18 @@
  *******************************************************************************/
 package org.eclipse.tracecompass.analysis.timing.core.segmentstore.statistics;
 
-import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
-
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.ISegmentStoreProvider;
 import org.eclipse.tracecompass.segmentstore.core.ISegment;
@@ -35,9 +40,9 @@ public abstract class AbstractSegmentStatisticsAnalysis extends TmfAbstractAnaly
 
     private @Nullable IAnalysisModule fSegmentStoreProviderModule;
 
-    private @Nullable SegmentStoreStatistics fTotalStats;
+    private final SegmentStoreStatistics [] fTotalStats = new SegmentStoreStatistics[2];
 
-    private @Nullable Map<String, SegmentStoreStatistics> fPerSegmentTypeStats;
+    private List<@Nullable Map<String, SegmentStoreStatistics>> fPerSegmentTypeStats = new ArrayList<>(2);
 
     @Override
     protected Iterable<IAnalysisModule> getDependentAnalyses() {
@@ -54,52 +59,63 @@ public abstract class AbstractSegmentStatisticsAnalysis extends TmfAbstractAnaly
 
     @Override
     protected boolean executeAnalysis(IProgressMonitor monitor) throws TmfAnalysisException {
+        Collection<ISegment> segStore = getSegmentStore();
+        return setStats(segStore, false, monitor);
+    }
+
+    private boolean setStats(Collection<ISegment> segStore, boolean isSelection, IProgressMonitor monitor) {
+
+        @Nullable SegmentStoreStatistics totalStat = calculateTotalManual(segStore, monitor);
+
+        if (totalStat == null) {
+            return false;
+        }
+        int index = isSelection ? 1 : 0;
+
+        @NonNull Map<@NonNull String, @NonNull SegmentStoreStatistics> perTypeStat = calculateTotalPerType(segStore, monitor);
+        if (perTypeStat.isEmpty()) {
+            fTotalStats[index] = null;
+            fPerSegmentTypeStats.add(index, null);
+            return false;
+        }
+        fTotalStats[index] = totalStat;
+        fPerSegmentTypeStats.add(index, perTypeStat);
+        return true;
+    }
+
+    /**
+     * Get the segment store from which we want the statistics
+     *
+     * @return The segment store
+     * @since 2.0
+     */
+    protected Collection<@NonNull ISegment> getSegmentStore() {
         IAnalysisModule segmentStoreProviderModule = fSegmentStoreProviderModule;
         ITmfTrace trace = getTrace();
         if (!(segmentStoreProviderModule instanceof ISegmentStoreProvider) || (trace == null)) {
-            return false;
+            return Collections.EMPTY_LIST;
         }
         segmentStoreProviderModule.waitForCompletion();
 
-        ISegmentStore<ISegment> segStore = ((ISegmentStoreProvider) segmentStoreProviderModule).getSegmentStore();
-
-        if (segStore != null) {
-
-            boolean result = calculateTotalManual(segStore, monitor);
-
-            if (!result) {
-                return false;
-            }
-
-            result = calculateTotalPerType(segStore, monitor);
-            if (!result) {
-                return false;
-            }
-        }
-        return true;
+        @Nullable ISegmentStore<@NonNull ISegment> segmentStore = ((ISegmentStoreProvider) segmentStoreProviderModule).getSegmentStore();
+        return segmentStore != null ? segmentStore.stream().collect(Collectors.toList()) : Collections.EMPTY_LIST;
     }
 
-    private boolean calculateTotalManual(ISegmentStore<ISegment> store, IProgressMonitor monitor) {
-        SegmentStoreStatistics total = new SegmentStoreStatistics();
-        Iterator<ISegment> iter = store.iterator();
-        while (iter.hasNext()) {
-            if (monitor.isCanceled()) {
-                return false;
-            }
-            ISegment segment = iter.next();
-            total.update(checkNotNull(segment));
+    private static @Nullable SegmentStoreStatistics calculateTotalManual(Collection<ISegment> segments, IProgressMonitor monitor) {
+        SegmentStoreStatistics total = StreamSupport.stream(segments.spliterator(), true).collect(SegmentStoreStatistics::new, SegmentStoreStatistics::update, SegmentStoreStatistics::merge);
+        if (monitor.isCanceled()) {
+            return null;
         }
-        fTotalStats = total;
-        return true;
+        return total;
     }
 
-    private boolean calculateTotalPerType(ISegmentStore<ISegment> store, IProgressMonitor monitor) {
+    private Map<@NonNull String, @NonNull SegmentStoreStatistics> calculateTotalPerType(Collection<ISegment> segments, IProgressMonitor monitor) {
         Map<String, SegmentStoreStatistics> perSegmentTypeStats = new HashMap<>();
 
-        Iterator<ISegment> iter = store.iterator();
+        Iterator<ISegment> iter = segments.iterator();
         while (iter.hasNext()) {
             if (monitor.isCanceled()) {
-                return false;
+                return Collections.EMPTY_MAP;
             }
             ISegment segment = iter.next();
             String segmentType = getSegmentType(segment);
@@ -112,8 +128,37 @@ public abstract class AbstractSegmentStatisticsAnalysis extends TmfAbstractAnaly
                 perSegmentTypeStats.put(segmentType, values);
             }
         }
-        fPerSegmentTypeStats = perSegmentTypeStats;
-        return true;
+        return perSegmentTypeStats;
+    }
+
+    /**
+     * Get the selection range statistics
+     *
+     * @param start
+     *            The selection start time
+     * @param end
+     *            The selection end time
+     * @param monitor
+     *            The progress monitor
+     * @return True if the update succeed, false otherwise
+     *
+     * @since 2.0
+     */
+    public boolean updateSelectionStats(long start, long end, IProgressMonitor monitor) {
+        Collection<@NonNull ISegment> selection = Collections.EMPTY_LIST;
+        IAnalysisModule segmentStoreProviderModule = fSegmentStoreProviderModule;
+        if (segmentStoreProviderModule != null) {
+            ITmfTrace trace = getTrace();
+            if (segmentStoreProviderModule instanceof ISegmentStoreProvider && trace != null) {
+                segmentStoreProviderModule.waitForCompletion();
+                if (monitor.isCanceled()) {
+                    return false;
+                }
+                @Nullable ISegmentStore<@NonNull ISegment> segmentStore = ((ISegmentStoreProvider) segmentStoreProviderModule).getSegmentStore();
+                selection = segmentStore != null ? (Collection<@NonNull ISegment>) segmentStore.getIntersectingElements(start, end) : Collections.EMPTY_LIST;
+            }
+        }
+        return setStats(selection, true, monitor);
     }
 
     /**
@@ -143,19 +188,29 @@ public abstract class AbstractSegmentStatisticsAnalysis extends TmfAbstractAnaly
     /**
      * The total statistics
      *
+     * @param isSelection
+     *            Tells whether the statistics requested is for a selection or
+     *            the whole trace
+     *
      * @return the total statistics
+     * @since 2.0
      */
-    public @Nullable SegmentStoreStatistics getTotalStats() {
-        return fTotalStats;
+    public @Nullable SegmentStoreStatistics getTotalStats(boolean isSelection) {
+        return isSelection ? fTotalStats[1] : fTotalStats[0];
     }
 
     /**
      * The per syscall statistics
      *
+     * @param isSelection
+     *            Tells whether the statistics requested is for a selection or
+     *            the whole trace
+     *
      * @return the per syscall statistics
+     * @since 2.0
      */
-    public @Nullable Map<String, SegmentStoreStatistics> getPerSegmentTypeStats() {
-        return fPerSegmentTypeStats;
+    public @Nullable Map<String, SegmentStoreStatistics> getPerSegmentTypeStats(boolean isSelection) {
+        return isSelection ? fPerSegmentTypeStats.get(1) : fPerSegmentTypeStats.get(0);
     }
 
 }

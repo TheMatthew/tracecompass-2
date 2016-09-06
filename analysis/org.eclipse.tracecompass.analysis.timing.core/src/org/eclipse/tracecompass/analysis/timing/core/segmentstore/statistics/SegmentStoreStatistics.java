@@ -113,7 +113,7 @@ public class SegmentStoreStatistics {
      * Get total value
      *
      * @return total value
-     * @since 1.1
+     * @since 2.0
      */
     public double getTotal() {
         return fTotal;
@@ -154,7 +154,7 @@ public class SegmentStoreStatistics {
      *
      * @param other
      *            The other segment store statistics
-     * @since 1.2
+     * @since 2.0
      */
     public void merge(SegmentStoreStatistics other) {
         if (other.fNbSegments == 0) {

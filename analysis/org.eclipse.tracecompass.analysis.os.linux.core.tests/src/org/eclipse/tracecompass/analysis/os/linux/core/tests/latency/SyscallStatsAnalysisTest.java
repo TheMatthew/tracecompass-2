@@ -79,7 +79,7 @@ public class SyscallStatsAnalysisTest {
     public void testSmallTraceSequential() {
         final SystemCallLatencyStatisticsAnalysisModule syscallStatsModule = fSyscallStatsModule;
         assertNotNull(syscallStatsModule);
-        SegmentStoreStatistics totalStats = syscallStatsModule.getTotalStats();
+        SegmentStoreStatistics totalStats = syscallStatsModule.getTotalStats(false);
         assertNotNull(totalStats);
         assertEquals(1801, totalStats.getNbSegments());
         assertEquals(5904091700L, totalStats.getMax());

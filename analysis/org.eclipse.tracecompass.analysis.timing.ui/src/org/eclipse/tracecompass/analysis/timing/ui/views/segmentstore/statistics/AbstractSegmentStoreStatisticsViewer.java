@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -40,6 +43,8 @@ import org.eclipse.tracecompass.internal.analysis.timing.ui.views.segmentstore.s
 import org.eclipse.tracecompass.tmf.core.analysis.TmfAbstractAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.exceptions.TmfAnalysisException;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSelectionRangeUpdatedSignal;
+import org.eclipse.tracecompass.tmf.core.signal.TmfSignalHandler;
+import org.eclipse.tracecompass.tmf.core.signal.TmfWindowRangeUpdatedSignal;
 import org.eclipse.tracecompass.tmf.core.timestamp.TmfTimestamp;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 import org.eclipse.tracecompass.tmf.ui.viewers.tree.AbstractTmfTreeViewer;
@@ -59,9 +64,9 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
 
     private static final Format FORMATTER = new SubSecondTimeWithUnitFormat();
 
-    @Nullable
-    private TmfAbstractAnalysisModule fModule;
+    private @Nullable TmfAbstractAnalysisModule fModule;
     private MenuManager fTablePopupMenuManager;
+    private @Nullable IProgressMonitor fMonitor;
 
     private static final String[] COLUMN_NAMES = new String[] {
             checkNotNull(Messages.SegmentStoreStatistics_LevelLabel),
@@ -322,6 +327,7 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
                     long start = segment.getEntry().getMinSegment().getStart();
                     long end = segment.getEntry().getMinSegment().getEnd();
                     broadcast(new TmfSelectionRangeUpdatedSignal(AbstractSegmentStoreStatisticsViewer.this, TmfTimestamp.fromNanos(start), TmfTimestamp.fromNanos(end)));
+                    updateContent(start, end, true);
                 }
             };
 
@@ -331,6 +337,7 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
                     long start = segment.getEntry().getMaxSegment().getStart();
                     long end = segment.getEntry().getMaxSegment().getEnd();
                     broadcast(new TmfSelectionRangeUpdatedSignal(AbstractSegmentStoreStatisticsViewer.this, TmfTimestamp.fromNanos(start), TmfTimestamp.fromNanos(end)));
+                    updateContent(start, end, true);
                 }
             };
 
@@ -387,9 +394,6 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
 
     @Override
     protected @Nullable ITmfTreeViewerEntry updateElements(long start, long end, boolean isSelection) {
-        if (isSelection || (start == end)) {
-            return null;
-        }
 
         TmfAbstractAnalysisModule analysisModule = getStatisticsAnalysisModule();
 
@@ -402,24 +406,44 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
         module.waitForCompletion();
 
         TmfTreeViewerEntry root = new TmfTreeViewerEntry(""); //$NON-NLS-1$
-        final SegmentStoreStatistics entry = module.getTotalStats();
+        List<ITmfTreeViewerEntry> entryList = root.getChildren();
+
+        if (isSelection) {
+            if (fMonitor != null) {
+                fMonitor.setCanceled(true);
+            }
+            fMonitor = new NullProgressMonitor();
+            module.updateSelectionStats(start, end, fMonitor);
+            setStats(entryList, module, getSelectionLabel());
+        }
+        setStats(entryList, module, getTotalLabel());
+        return root;
+    }
+
+    private void setStats(List<ITmfTreeViewerEntry> entryList, AbstractSegmentStatisticsAnalysis module, String rootName) {
+        boolean isSelection = !rootName.equals(getTotalLabel()) ? true : false;
+        final SegmentStoreStatistics entry = module.getTotalStats(isSelection);
         if (entry != null) {
 
-            List<ITmfTreeViewerEntry> entryList = root.getChildren();
+            if (entry.getNbSegments() == 0) {
+                return;
+            }
+            TmfTreeViewerEntry child = new SegmentStoreStatisticsEntry(checkNotNull(rootName), entry);
+            entryList.add(child);
 
-            TmfTreeViewerEntry aggregateEntry = new SegmentStoreStatisticsEntry(getTotalLabel(), entry);
-            entryList.add(aggregateEntry);
-            HiddenTreeViewerEntry category = new HiddenTreeViewerEntry(getTypeLabel());
-            aggregateEntry.addChild(category);
-
-            Map<String, SegmentStoreStatistics> perSegmentStats = module.getPerSegmentTypeStats();
-            if (perSegmentStats != null) {
-                for (Entry<String, SegmentStoreStatistics> statsEntry : perSegmentStats.entrySet()) {
-                    category.addChild(new SegmentStoreStatisticsEntry(statsEntry.getKey(), statsEntry.getValue()));
+            final Map<@NonNull String, @NonNull SegmentStoreStatistics> perTypeStats = module.getPerSegmentTypeStats(isSelection);
+            if (perTypeStats != null) {
+                for (Entry<@NonNull String, @NonNull SegmentStoreStatistics> statsEntry : perTypeStats.entrySet()) {
+                    child.addChild(new SegmentStoreStatisticsEntry(statsEntry.getKey(), statsEntry.getValue()));
                 }
             }
         }
-        return root;
+    }
+
+    @Override
+    @TmfSignalHandler
+    public void windowRangeUpdated(@Nullable TmfWindowRangeUpdatedSignal signal) {
+        //Do nothing
     }
 
     /**
@@ -440,6 +464,16 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
      */
     protected String getTotalLabel() {
         return checkNotNull(Messages.AbstractSegmentStoreStatisticsViewer_total);
+    }
+
+    /**
+     * Get the selection column label
+     *
+     * @return The selection column label
+     * @since 1.1
+     */
+    protected String getSelectionLabel() {
+        return checkNotNull(Messages.AbstractSegmentStoreStatisticsViewer_selection);
     }
 
     /**
