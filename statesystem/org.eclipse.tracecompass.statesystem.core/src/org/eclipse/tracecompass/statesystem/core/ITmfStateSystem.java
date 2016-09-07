@@ -447,6 +447,7 @@ public interface ITmfStateSystem {
      *            the end of the range of intervals to iterate over
      * @return an Iterator over the intervals of a given attribute, with
      *         intervals ordered
+     * @since 2.1
      */
     default Iterator<ITmfStateInterval> getIteratorOverQuark(int quark, long start, long end) {
         return Collections.EMPTY_LIST.iterator();

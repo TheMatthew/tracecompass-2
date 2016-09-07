@@ -26,6 +26,7 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernel.KernelAnalysisModule;
+import org.eclipse.tracecompass.analysis.os.linux.core.kernel.KernelThreadInformationProvider;
 import org.eclipse.tracecompass.analysis.os.linux.core.signals.TmfCpuSelectedSignal;
 import org.eclipse.tracecompass.internal.analysis.os.linux.core.kernel.Attributes;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.Messages;
@@ -41,6 +42,7 @@ import org.eclipse.tracecompass.tmf.core.statesystem.TmfStateSystemAnalysisModul
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceContext;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceManager;
+import org.eclipse.tracecompass.tmf.core.trace.TmfTraceUtils;
 import org.eclipse.tracecompass.tmf.ui.views.timegraph.AbstractStateSystemTimeGraphView;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeGraphEntry;
@@ -77,6 +79,23 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
      */
     public PriorityView() {
         super(ID, new PriorityPresentationProvider());
+        setTreeColumns(new String [] {"", "TID"});
+        setTreeLabelProvider(new TreeLabelProvider() {
+            @Override
+            public String getColumnText(Object element, int columnIndex) {
+                if (element instanceof PriorityEntry) {
+                    PriorityEntry priorityEntry = (PriorityEntry) element;
+                    if (columnIndex == 0) {
+                        return priorityEntry.getName();
+                    }
+                    if (columnIndex == 1 && priorityEntry.getType() == PriorityEntry.Type.THREAD) {
+                        return Integer.toString(priorityEntry.getId());
+                    }
+                    return ""; //$NON-NLS-1$
+                }
+                return "";
+            }
+        });
         setFilterColumns(FILTER_COLUMN_NAMES);
         setFilterLabelProvider(new PriorityFilterLabelProvider());
         setEntryComparator(new PriorityEntryComparator());
@@ -283,6 +302,9 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
             int threadQuark = ssq.getQuarkAbsolute(Attributes.THREADS, threadString);
             int prioQ = ssq.getQuarkRelative(threadQuark, Attributes.PRIO);
             int prio = ssq.querySingleState(currentThreadInterval.getStartTime(), prioQ).getStateValue().unboxInt();
+            KernelAnalysisModule module = TmfTraceUtils.getAnalysisModuleOfClass(trace, KernelAnalysisModule.class, KernelAnalysisModule.ID);
+            String execName = KernelThreadInformationProvider.getExecutableName(module, currenthread);
+
             PriorityEntry prioEntry = entryMap.get(prio - cpuEntry.getId() * 256);
             if (prioEntry == null) {
                 prioEntry = new PriorityEntry(prioQ, trace, startTime, endTime, Type.PRIORITY, prio);
@@ -302,7 +324,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
                 }
             }
             if (!found) {
-                PriorityEntry threadEntry = new PriorityEntry(threadQuark, trace, startTime, endTime, Type.THREAD, currenthread);
+                PriorityEntry threadEntry = new PriorityEntry(threadQuark, trace, startTime, endTime, Type.THREAD, currenthread, execName);
                 entryMap.put(threadQuark + cpuEntry.getId() * 65536, threadEntry);
                 prioEntry.addChild(threadEntry);
             }
@@ -332,11 +354,18 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
 
     private static List<ITimeEvent> createTreadEventsList(@NonNull TimeGraphEntry entry, ITmfStateSystem ssq, @NonNull List<List<ITmfStateInterval>> fullStates, @Nullable List<ITmfStateInterval> prevFullState, @NonNull IProgressMonitor monitor,
             int threadId, int cpuQuark) {
-        List<ITimeEvent> eventList;
-        int statusQuark;
+        List<ITimeEvent> eventList = null;
+        if (!(entry instanceof PriorityEntry)) {
+            return eventList;
+        }
+        PriorityEntry priorityEntry = (PriorityEntry) entry;
+        int cpuStatusQuark;
         int currentThreadQuark;
+        int threadQuark = priorityEntry.getQuark();
+        int statusQuark;
         try {
-            statusQuark = ssq.getQuarkRelative(cpuQuark, Attributes.STATUS);
+            statusQuark = ssq.getQuarkRelative(threadQuark, Attributes.STATUS);
+            cpuStatusQuark = ssq.getQuarkRelative(cpuQuark, Attributes.STATUS);
             currentThreadQuark = ssq.getQuarkRelative(cpuQuark, Attributes.CURRENT_THREAD);
         } catch (AttributeNotFoundException e) {
             /*
@@ -347,7 +376,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         }
         boolean isZoomThread = Thread.currentThread() instanceof ZoomThread;
         eventList = new ArrayList<>(fullStates.size());
-        ITmfStateInterval lastInterval = prevFullState == null || statusQuark >= prevFullState.size() ? null : prevFullState.get(statusQuark);
+        ITmfStateInterval lastInterval = prevFullState == null || statusQuark >= prevFullState.size() ? null : prevFullState.get(cpuStatusQuark);
         long lastStartTime = lastInterval == null ? -1 : lastInterval.getStartTime();
         long lastEndTime = lastInterval == null ? -1 : lastInterval.getEndTime() + 1;
         for (List<ITmfStateInterval> fullState : fullStates) {
@@ -359,16 +388,17 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
                 continue;
             }
             ITmfStateInterval statusInterval = fullState.get(statusQuark);
-            int status = statusInterval.getStateValue().unboxInt();
             long time = statusInterval.getStartTime();
-            long duration = statusInterval.getEndTime() - time + 1;
             if (time == lastStartTime) {
                 continue;
             }
+            long duration = statusInterval.getEndTime() - time + 1;
             if (!statusInterval.getStateValue().isNull() && fullState.get(currentThreadQuark).getStateValue().unboxInt() == threadId) {
                 if (lastEndTime != time && lastEndTime != -1) {
                     eventList.add(new TimeEvent(entry, lastEndTime, time - lastEndTime));
                 }
+                ITmfStateInterval cpuStatusInterval = fullState.get(cpuStatusQuark);
+                int status = cpuStatusInterval.getStateValue().unboxInt();
                 eventList.add(new TimeEvent(entry, time, duration, status));
             } else if (isZoomThread) {
                 eventList.add(new NullTimeEvent(entry, time, duration));

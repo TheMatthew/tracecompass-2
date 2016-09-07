@@ -112,6 +112,10 @@ public class PriorityEntry extends TimeGraphEntry implements Comparable<ITimeGra
         this(quark, trace, computeEntryName(type, id), startTime, endTime, type, id);
     }
 
+    public PriorityEntry(int quark, @NonNull ITmfTrace trace, long startTime, long endTime, Type type, int id, String execName) {
+        this(quark, trace, execName, startTime, endTime, type, id);
+    }
+
     private static String computeEntryName(Type type, int id) {
         return type.toString() + ' ' + id;
     }
@@ -187,5 +191,4 @@ public class PriorityEntry extends TimeGraphEntry implements Comparable<ITimeGra
     public Iterator<@NonNull ITimeEvent> getTimeEventsIterator() {
         return super.getTimeEventsIterator();
     }
-
 }
