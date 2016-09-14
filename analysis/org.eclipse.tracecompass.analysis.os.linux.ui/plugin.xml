@@ -84,8 +84,9 @@
       <view
             category="org.eclipse.linuxtools.lttng2.ui.views.category"
             class="org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityView"
+            icon="icons/eview16/priority.png"
             id="org.eclipse.tracecompass.analysis.os.linux.ui.priority"
-            name="Priority View"
+            name="%priority.view.name"
             restorable="true">
       </view>
    </extension>
