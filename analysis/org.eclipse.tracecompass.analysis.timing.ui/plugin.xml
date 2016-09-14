@@ -44,6 +44,41 @@
          <analysisModuleClass
                class="org.eclipse.tracecompass.internal.analysis.timing.core.callgraph.CallGraphStatisticsAnalysis">
          </analysisModuleClass>
+</output>
+      <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.analysis.innout.density">
+         <analysisId
+               id="org.eclipse.tracecompass.inandout.analysis">
+         </analysisId>
+      </output>
+      <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.analysis.inandout.views.latency">
+         <analysisId
+               id="org.eclipse.tracecompass.inandout.analysis">
+         </analysisId>
+      </output>
+      <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.analysis.inandout.statistics.view">
+         <analysisId
+               id="org.eclipse.tracecompass.inandout.analysis">
+         </analysisId>
+      </output>
+      <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.analysis.innout.scatter">
+         <analysisId
+               id="org.eclipse.tracecompass.inandout.analysis">
+         </analysisId>
+      </output>
+      <output
+            class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
+            id="org.eclipse.tracecompass.inandoutchart">
+         <analysisId
+               id="org.eclipse.tracecompass.inandout.analysis">
+         </analysisId>
       </output>
    </extension>
    <extension
@@ -66,6 +101,7 @@
             restorable="true">
       </view>
       <view
+<<<<<<< HEAD
 
             category="org.eclipse.linuxtools.tmf.ui.views.category"
             class="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.statistics.CallGraphStatisticsView"
@@ -75,6 +111,45 @@
             class="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.CallGraph"
             id="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.cgraph"
             name="Call Graph"
+=======
+            category="org.eclipse.linuxtools.tmf.ui.views.category"
+            class="org.eclipse.tracecompass.internal.analysis.timing.ui.inandout.views.InAndOutDensityView"
+            icon="icons/elcl16/EntryNExit.png"
+            id="org.eclipse.tracecompass.analysis.innout.density"
+            name="In-N-Out Density View"
+            restorable="true">
+      </view>
+      <view
+            category="org.eclipse.linuxtools.tmf.ui.views.category"
+            class="org.eclipse.tracecompass.internal.analysis.timing.ui.inandout.views.InAndOutTableView"
+            icon="icons/elcl16/EntryNExit.png"
+            id="org.eclipse.tracecompass.analysis.inandout.views.latency"
+            name="In-N-Out Table"
+            restorable="true">
+      </view>
+      <view
+            category="org.eclipse.linuxtools.tmf.ui.views.category"
+            class="org.eclipse.tracecompass.internal.analysis.timing.ui.inandout.views.InAndOutStatisticsView"
+            icon="icons/elcl16/EntryNExit.png"
+            id="org.eclipse.tracecompass.analysis.inandout.statistics.view"
+            name="In-N-Out Statistics"
+            restorable="true">
+      </view>
+      <view
+            category="org.eclipse.linuxtools.tmf.ui.views.category"
+            class="org.eclipse.tracecompass.internal.analysis.timing.ui.inandout.views.InAndOutScatterView"
+            icon="icons/elcl16/EntryNExit.png"
+            id="org.eclipse.tracecompass.analysis.innout.scatter"
+            name="In-N-Out Scatter"
+            restorable="true">
+      </view>
+      <view
+            category="org.eclipse.linuxtools.tmf.ui.views.category"
+            class="org.eclipse.tracecompass.internal.analysis.timing.ui.inandout.views.InAndOutChart"
+            icon="icons/elcl16/EntryNExit.png"
+            id="org.eclipse.tracecompass.inandoutchart"
+            name="In-N-Out Chart"
+>>>>>>> ea3ab05... timing.ui: add In-N-Out analysis
             restorable="true">
       </view>
    </extension>

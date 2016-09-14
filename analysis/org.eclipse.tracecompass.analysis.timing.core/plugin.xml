@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.linuxtools.tmf.core.analysis">
+      <module
+            analysis_module="org.eclipse.tracecompass.internal.analysis.timing.core.inandout.InAndOutAnalysis"
+            automatic="true"
+            id="org.eclipse.tracecompass.inandout.analysis"
+            name="In N Out">
+         <tracetype
+               applies="true"
+               class="org.eclipse.tracecompass.tmf.core.trace.TmfTrace">
+         </tracetype>
+      </module>
+   </extension>
+   <extension
+         point="org.eclipse.linuxtools.tmf.core.analysis">
+      <module
+            analysis_module="org.eclipse.tracecompass.internal.analysis.timing.core.inandout.InAndOutAnalysis"
+            automatic="true"
+            id="org.eclipse.tracecompass.inandout.analysis"
+            name="In N Out">
+         <tracetype
+               class="org.eclipse.tracecompass.tmf.core.trace.TmfTrace">
+         </tracetype>
+      </module>
+   </extension>
+   <extension
+         point="org.eclipse.linuxtools.tmf.core.analysis">
+      <module
+            analysis_module="org.eclipse.tracecompass.internal.analysis.timing.core.inandout.InAndOutAnalysis"
+            id="org.eclipse.tracecompass.inandout.analysis"
+            name="In N Out">
+      </module>
+   </extension>
+   <extension
+         point="org.eclipse.linuxtools.tmf.core.analysis">
+      <module
+            analysis_module="org.eclipse.tracecompass.analysis.timing.core.AnalysisModule1"
+            id="org.eclipse.tracecompass.inandout.analysis"
+            name="In N Out">
+      </module>
+   </extension>
+   <extension
+         point="org.eclipse.linuxtools.tmf.core.analysis">
+      <module
+            analysis_module="org.eclipse.tracecompass.analysis.timing.core.AnalysisModule1"
+            id="org.eclipse.tracecompass.analysis.timing.core.module1"
+            name="org.eclipse.tracecompass.analysis.timing.core.module1">
+      </module>
+   </extension>
+
+</plugin>
