@@ -13,12 +13,17 @@
 
 package org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.resources.AggregateEventIterator;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeGraphEntry;
+import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeGraphEntry;
 
 /**
@@ -26,7 +31,7 @@ import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeGraphEntry;
  *
  * @author Patrick Tasse
  */
-public class PriorityEntry extends TimeGraphEntry implements Comparable<ITimeGraphEntry> {
+public class PriorityViewEntry extends TimeGraphEntry implements Comparable<ITimeGraphEntry> {
 
     /** Type of resource */
     public static enum Type {
@@ -37,7 +42,9 @@ public class PriorityEntry extends TimeGraphEntry implements Comparable<ITimeGra
         /** Entries for Prioritys */
         PRIORITY,
         /** Entries for Threads */
-        THREAD
+        THREAD,
+        /** entries for the top level trace */
+        TRACE
     }
 
     private final int fId;
@@ -63,32 +70,13 @@ public class PriorityEntry extends TimeGraphEntry implements Comparable<ITimeGra
      * @param id
      *            The id of this entry
      */
-    public PriorityEntry(int quark, @NonNull ITmfTrace trace, String name,
+    private PriorityViewEntry(int quark, @NonNull ITmfTrace trace, String name,
             long startTime, long endTime, Type type, int id) {
         super(name, startTime, endTime);
         fId = id;
         fTrace = trace;
         fType = type;
         fQuark = quark;
-    }
-
-    /**
-     * Constructor
-     *
-     * @param trace
-     *            The trace on which we are working
-     * @param name
-     *            The exec_name of this entry
-     * @param startTime
-     *            The start time of this entry lifetime
-     * @param endTime
-     *            The end time of this entry
-     * @param id
-     *            The id of this entry
-     */
-    public PriorityEntry(@NonNull ITmfTrace trace, String name,
-            long startTime, long endTime, int id) {
-        this(-1, trace, name, startTime, endTime, Type.NULL, id);
     }
 
     /**
@@ -106,18 +94,25 @@ public class PriorityEntry extends TimeGraphEntry implements Comparable<ITimeGra
      *            The type of this entry
      * @param id
      *            The id of this entry
+     * @param execName The executable name
+     * @return the entry
      */
-    public PriorityEntry(int quark, @NonNull ITmfTrace trace,
-            long startTime, long endTime, Type type, int id) {
-        this(quark, trace, computeEntryName(type, id), startTime, endTime, type, id);
-    }
-
-    public PriorityEntry(int quark, @NonNull ITmfTrace trace, long startTime, long endTime, Type type, int id, String execName) {
-        this(quark, trace, execName, startTime, endTime, type, id);
-    }
-
-    private static String computeEntryName(Type type, int id) {
-        return type.toString() + ' ' + id;
+    public static TimeGraphEntry create(int quark, @NonNull ITmfTrace trace,
+            long startTime, long endTime, Type type, int id, String execName) {
+        switch (type) {
+        case CPU:
+            return new PriorityViewEntry(quark, trace, execName, startTime, endTime, type, id);
+        case NULL:
+            return new NullEntry(startTime, endTime);
+        case PRIORITY:
+            return new AggregatePriorityEntry(trace, startTime, endTime, id);
+        case THREAD:
+            return new PriorityViewEntry(quark, trace, execName, startTime, endTime, type, id);
+        case TRACE:
+            return new PriorityViewEntry(quark, trace, trace.getName(), startTime, endTime, type, id);
+        default:
+            throw new IllegalStateException("Type must be Priority, Cpu or Thread, not " + type.toString());
+        }
     }
 
     /**
@@ -166,13 +161,13 @@ public class PriorityEntry extends TimeGraphEntry implements Comparable<ITimeGra
 
     @Override
     public int compareTo(ITimeGraphEntry other) {
-        if (!(other instanceof PriorityEntry)) {
+        if (!(other instanceof PriorityViewEntry)) {
             /*
              * Should not happen, but if it does, put those entries at the end
              */
             return -1;
         }
-        PriorityEntry o = (PriorityEntry) other;
+        PriorityViewEntry o = (PriorityViewEntry) other;
 
         /*
          * Resources entry names should all be of type "ABC 123"
@@ -191,4 +186,77 @@ public class PriorityEntry extends TimeGraphEntry implements Comparable<ITimeGra
     public Iterator<@NonNull ITimeEvent> getTimeEventsIterator() {
         return super.getTimeEventsIterator();
     }
+
+    static class NullEntry extends TimeGraphEntry {
+        public NullEntry(long startTime, long endTime) {
+            super(null, startTime, endTime);
+        }
+    }
+
+    public static class AggregatePriorityEntry extends PriorityViewEntry {
+
+        private final @NonNull List<ITimeGraphEntry> fContributors = new ArrayList<>();
+
+        private static final Comparator<ITimeEvent> COMPARATOR = new Comparator<ITimeEvent>() {
+            @Override
+            public int compare(ITimeEvent o1, ITimeEvent o2) {
+                // largest value
+                return Integer.compare(getValue(o2), getValue(o1));
+            }
+
+            private int getValue(ITimeEvent element) {
+                return (element instanceof TimeEvent) ? ((TimeEvent) element).getValue() : Integer.MIN_VALUE;
+            }
+        };
+
+        private final int fPriority;
+
+        /**
+         * AggregateResourcesEntry Constructor
+         *
+         * @param trace
+         *            the parent trace
+         * @param startTime
+         *            the start time
+         * @param endTime
+         *            the end time
+         * @param type
+         *            the type
+         * @param id
+         *            the id
+         */
+        public AggregatePriorityEntry(@NonNull ITmfTrace trace,
+                long startTime, long endTime, int priority) {
+            super(-1, trace, "Priority " + priority, startTime, endTime, Type.PRIORITY, priority);
+            fPriority = priority;
+
+        }
+
+        @Override
+        public void addEvent(ITimeEvent event) {
+        }
+
+        @Override
+        public void addZoomedEvent(ITimeEvent event) {
+        }
+
+        @Override
+        public Iterator<@NonNull ITimeEvent> getTimeEventsIterator() {
+            return new AggregateEventIterator(fContributors, COMPARATOR);
+        }
+
+        @Override
+        public Iterator<@NonNull ITimeEvent> getTimeEventsIterator(long startTime, long stopTime, long visibleDuration) {
+            return new AggregateEventIterator(fContributors, startTime, stopTime, visibleDuration, COMPARATOR);
+        }
+
+        public void addContributor(ITimeGraphEntry entry) {
+            fContributors.add(entry);
+        }
+
+        public int getPriority() {
+            return fPriority;
+        }
+    }
+
 }

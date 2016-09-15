@@ -20,7 +20,7 @@ import org.eclipse.tracecompass.analysis.os.linux.core.kernel.StateValues;
 import org.eclipse.tracecompass.internal.analysis.os.linux.core.kernel.Attributes;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.Activator;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.Messages;
-import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityEntry.Type;
+import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityViewEntry.Type;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
 import org.eclipse.tracecompass.statesystem.core.exceptions.AttributeNotFoundException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedException;
@@ -51,8 +51,8 @@ public class PriorityPresentationProvider extends TimeGraphPresentationProvider 
             return INVISIBLE;
         }
         ITimeGraphEntry entry = event.getEntry();
-        if (entry instanceof PriorityEntry) {
-            PriorityEntry priorityEntry = (PriorityEntry) entry;
+        if (entry instanceof PriorityViewEntry) {
+            PriorityViewEntry priorityEntry = (PriorityViewEntry) entry;
             if (event instanceof TimeEvent) {
                 TimeEvent timeEvent = (TimeEvent) event;
                 if (priorityEntry.getType() == Type.CPU) {
@@ -81,13 +81,13 @@ public class PriorityPresentationProvider extends TimeGraphPresentationProvider 
     public Map<String, String> getEventHoverToolTipInfo(ITimeEvent event, long hoverTime) {
         Map<String, String> retMap = new LinkedHashMap<>();
         if (!(event instanceof TimeEvent) || !((TimeEvent) event).hasValue() ||
-                !(event.getEntry() instanceof PriorityEntry)) {
+                !(event.getEntry() instanceof PriorityViewEntry)) {
             return retMap;
         }
 
 
 
-        PriorityEntry entry = (PriorityEntry) event.getEntry();
+        PriorityViewEntry entry = (PriorityViewEntry) event.getEntry();
         ITmfStateSystem ssq = TmfStateSystemAnalysisModule.getStateSystem(entry.getTrace(), KernelAnalysisModule.ID);
         if (ssq == null) {
             return retMap;

@@ -32,7 +32,8 @@ import org.eclipse.tracecompass.internal.analysis.os.linux.core.kernel.Attribute
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.Messages;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.actions.FollowCpuAction;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.actions.UnfollowCpuAction;
-import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityEntry.Type;
+import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityViewEntry.AggregatePriorityEntry;
+import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityViewEntry.Type;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
 import org.eclipse.tracecompass.statesystem.core.exceptions.AttributeNotFoundException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedException;
@@ -79,16 +80,16 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
      */
     public PriorityView() {
         super(ID, new PriorityPresentationProvider());
-        setTreeColumns(new String [] {"", "TID"});
+        setTreeColumns(new String[] { "", "TID" });
         setTreeLabelProvider(new TreeLabelProvider() {
             @Override
             public String getColumnText(Object element, int columnIndex) {
-                if (element instanceof PriorityEntry) {
-                    PriorityEntry priorityEntry = (PriorityEntry) element;
+                if (element instanceof PriorityViewEntry) {
+                    PriorityViewEntry priorityEntry = (PriorityViewEntry) element;
                     if (columnIndex == 0) {
                         return priorityEntry.getName();
                     }
-                    if (columnIndex == 1 && priorityEntry.getType() == PriorityEntry.Type.THREAD) {
+                    if (columnIndex == 1 && priorityEntry.getType() == PriorityViewEntry.Type.THREAD) {
                         return Integer.toString(priorityEntry.getId());
                     }
                     return ""; //$NON-NLS-1$
@@ -105,14 +106,17 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
     private static class PriorityEntryComparator implements Comparator<ITimeGraphEntry> {
         @Override
         public int compare(ITimeGraphEntry o1, ITimeGraphEntry o2) {
-            PriorityEntry entry1 = (PriorityEntry) o1;
-            PriorityEntry entry2 = (PriorityEntry) o2;
-            if (entry1.getType() == Type.NULL && entry2.getType() == Type.NULL) {
+            TimeGraphEntry entry1 = (TimeGraphEntry) o1;
+            TimeGraphEntry entry2 = (TimeGraphEntry) o2;
+            if (entry1.getParent() == null && entry2.getParent() == null) {
                 /* sort trace entries alphabetically */
                 return entry1.getName().compareTo(entry2.getName());
+            } else if (entry1 instanceof Comparable) {
+                /* sort resource entries by their defined order */
+                Comparable comparable = (Comparable) entry1;
+                return comparable.compareTo(entry2);
             }
-            /* sort resource entries by their defined order */
-            return entry1.compareTo(entry2);
+            return 0;
         }
     }
 
@@ -124,9 +128,9 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         ISelection selection = getSite().getSelectionProvider().getSelection();
         if (selection instanceof IStructuredSelection) {
             IStructuredSelection sSel = (IStructuredSelection) selection;
-            if (sSel.getFirstElement() instanceof PriorityEntry) {
-                PriorityEntry resourcesEntry = (PriorityEntry) sSel.getFirstElement();
-                if (resourcesEntry.getType().equals(PriorityEntry.Type.CPU)) {
+            if (sSel.getFirstElement() instanceof PriorityViewEntry) {
+                PriorityViewEntry resourcesEntry = (PriorityViewEntry) sSel.getFirstElement();
+                if (resourcesEntry.getType().equals(PriorityViewEntry.Type.CPU)) {
                     TmfTraceContext ctx = TmfTraceManager.getInstance().getCurrentTraceContext();
                     Integer data = (Integer) ctx.getData(RESOURCES_FOLLOW_CPU);
                     int cpu = data != null ? data.intValue() : -1;
@@ -143,7 +147,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
     private static class PriorityFilterLabelProvider extends TreeLabelProvider {
         @Override
         public String getColumnText(Object element, int columnIndex) {
-            PriorityEntry entry = (PriorityEntry) element;
+            PriorityViewEntry entry = (PriorityViewEntry) element;
             if (columnIndex == 0) {
                 return entry.getName();
             }
@@ -183,7 +187,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
             return;
         }
 
-        Map<Integer, PriorityEntry> entryMap = new HashMap<>();
+        Map<Integer, TimeGraphEntry> entryMap = new HashMap<>();
         TimeGraphEntry traceEntry = null;
 
         long startTime = ssq.getStartTime();
@@ -207,7 +211,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
             setEndTime(Math.max(getEndTime(), endTime));
 
             if (traceEntry == null) {
-                traceEntry = new PriorityEntry(trace, trace.getName(), startTime, endTime, 0);
+                traceEntry = PriorityViewEntry.create(ITmfStateSystem.INVALID_ATTRIBUTE, trace, startTime, endTime, Type.TRACE, 0, null);
                 List<TimeGraphEntry> entryList = Collections.singletonList(traceEntry);
                 addToEntryList(parentTrace, ssq, entryList);
             } else {
@@ -270,14 +274,14 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
 
     }
 
-    private static void createCpuEntriesWithQuark(@NonNull ITmfTrace trace, final ITmfStateSystem ssq, Map<Integer, PriorityEntry> entryMap, TimeGraphEntry traceEntry, long startTime, long endTime, List<Integer> cpuQuarks)
+    private static void createCpuEntriesWithQuark(@NonNull ITmfTrace trace, final ITmfStateSystem ssq, Map<Integer, TimeGraphEntry> entryMap, TimeGraphEntry traceEntry, long startTime, long endTime, List<Integer> cpuQuarks)
             throws AttributeNotFoundException, StateSystemDisposedException {
         for (Integer cpuQuark : cpuQuarks) {
             final @NonNull String cpuName = ssq.getAttributeName(cpuQuark);
             int cpu = Integer.parseInt(cpuName);
-            PriorityEntry cpuEntry = entryMap.get(cpuQuark);
+            TimeGraphEntry cpuEntry = entryMap.get(cpuQuark);
             if (cpuEntry == null) {
-                cpuEntry = new PriorityEntry(cpuQuark, trace, startTime, endTime, Type.CPU, cpu);
+                cpuEntry = PriorityViewEntry.create(cpuQuark, trace, startTime, endTime, Type.CPU, cpu, Type.CPU.toString() + " " + cpu);
                 entryMap.put(cpuQuark, cpuEntry);
                 traceEntry.addChild(cpuEntry);
             } else {
@@ -288,10 +292,13 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         }
     }
 
-    private static void createCpuPriorityEntryWithQuark(@NonNull ITmfTrace trace, ITmfStateSystem ssq, Map<Integer, PriorityEntry> entryMap, long startTime, long endTime, PriorityEntry cpuEntry,
+    private static void createCpuPriorityEntryWithQuark(@NonNull ITmfTrace trace, ITmfStateSystem ssq, Map<Integer, TimeGraphEntry> entryMap, long startTime, long endTime, TimeGraphEntry parentEntry,
             int currentThreadQuark) throws StateSystemDisposedException, AttributeNotFoundException {
         Iterator<ITmfStateInterval> iter = ssq.getIteratorOverQuark(currentThreadQuark, startTime, ssq.getCurrentEndTime());
-
+        if (!(parentEntry instanceof PriorityViewEntry)) {
+            return;
+        }
+        PriorityViewEntry cpuEntry = (PriorityViewEntry) parentEntry;
         while (iter.hasNext()) {
             ITmfStateInterval currentThreadInterval = iter.next();
             int currenthread = currentThreadInterval.getStateValue().unboxInt();
@@ -305,9 +312,9 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
             KernelAnalysisModule module = TmfTraceUtils.getAnalysisModuleOfClass(trace, KernelAnalysisModule.class, KernelAnalysisModule.ID);
             String execName = KernelThreadInformationProvider.getExecutableName(module, currenthread);
 
-            PriorityEntry prioEntry = entryMap.get(prio - cpuEntry.getId() * 256);
+            TimeGraphEntry prioEntry = entryMap.get(prio - cpuEntry.getId() * 256);
             if (prioEntry == null) {
-                prioEntry = new PriorityEntry(prioQ, trace, startTime, endTime, Type.PRIORITY, prio);
+                prioEntry = PriorityViewEntry.create(prioQ, trace, startTime, endTime, Type.PRIORITY, prio, null);
                 entryMap.put(prio - cpuEntry.getId() * 256, prioEntry);
                 cpuEntry.addChild(prioEntry);
             } else {
@@ -315,8 +322,8 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
             }
             boolean found = false;
             for (TimeGraphEntry child : prioEntry.getChildren()) {
-                if (child instanceof PriorityEntry) {
-                    PriorityEntry threadEntry = (PriorityEntry) child;
+                if (child instanceof PriorityViewEntry) {
+                    PriorityViewEntry threadEntry = (PriorityViewEntry) child;
                     if (threadEntry.getQuark() == threadQuark) {
                         threadEntry.updateEndTime(endTime);
                         found = true;
@@ -324,9 +331,14 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
                 }
             }
             if (!found) {
-                PriorityEntry threadEntry = new PriorityEntry(threadQuark, trace, startTime, endTime, Type.THREAD, currenthread, execName);
+                TimeGraphEntry threadEntry = PriorityViewEntry.create(threadQuark, trace, startTime, endTime, Type.THREAD, currenthread, execName);
                 entryMap.put(threadQuark + cpuEntry.getId() * 65536, threadEntry);
                 prioEntry.addChild(threadEntry);
+                if(prioEntry instanceof AggregatePriorityEntry){
+                    AggregatePriorityEntry aggregatePriorityEntry = (AggregatePriorityEntry) prioEntry;
+                    aggregatePriorityEntry.addContributor(threadEntry);
+
+                }
             }
         }
 
@@ -335,19 +347,23 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
     @Override
     protected @Nullable List<ITimeEvent> getEventList(@NonNull TimeGraphEntry entry, ITmfStateSystem ssq,
             @NonNull List<List<ITmfStateInterval>> fullStates, @Nullable List<ITmfStateInterval> prevFullState, @NonNull IProgressMonitor monitor) {
-        PriorityEntry priorityEntry = (PriorityEntry) entry;
-        Type type = priorityEntry.getType();
-        switch (type) {
-        case CPU:
-            return createCpuEventsList(entry, ssq, fullStates, prevFullState, monitor, priorityEntry.getQuark());
-        case THREAD:
-            return createTreadEventsList(entry, ssq, fullStates, prevFullState, monitor, priorityEntry.getId(), ((PriorityEntry) entry.getParent().getParent()).getQuark());
-        case NULL:
-            break;
-        case PRIORITY:
-            break;
-        default:
-            break;
+        if (entry instanceof PriorityViewEntry) {
+            PriorityViewEntry priorityEntry = (PriorityViewEntry) entry;
+            Type type = priorityEntry.getType();
+            switch (type) {
+            case CPU:
+                return createCpuEventsList(entry, ssq, fullStates, prevFullState, monitor, priorityEntry.getQuark());
+            case THREAD:
+                return createTreadEventsList(entry, ssq, fullStates, prevFullState, monitor, priorityEntry.getId(), ((PriorityViewEntry) entry.getParent().getParent()).getQuark());
+            case NULL:
+                break;
+            case PRIORITY:
+                break;
+            case TRACE:
+                break;
+            default:
+                break;
+            }
         }
         return Collections.EMPTY_LIST;
     }
@@ -355,10 +371,10 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
     private static List<ITimeEvent> createTreadEventsList(@NonNull TimeGraphEntry entry, ITmfStateSystem ssq, @NonNull List<List<ITmfStateInterval>> fullStates, @Nullable List<ITmfStateInterval> prevFullState, @NonNull IProgressMonitor monitor,
             int threadId, int cpuQuark) {
         List<ITimeEvent> eventList = null;
-        if (!(entry instanceof PriorityEntry)) {
+        if (!(entry instanceof PriorityViewEntry)) {
             return eventList;
         }
-        PriorityEntry priorityEntry = (PriorityEntry) entry;
+        PriorityViewEntry priorityEntry = (PriorityViewEntry) entry;
         int cpuStatusQuark;
         int currentThreadQuark;
         int threadQuark = priorityEntry.getQuark();
