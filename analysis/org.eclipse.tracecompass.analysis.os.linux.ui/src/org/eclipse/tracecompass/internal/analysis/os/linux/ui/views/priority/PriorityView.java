@@ -28,9 +28,11 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernel.KernelAnalysisModule;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernel.KernelThreadInformationProvider;
 import org.eclipse.tracecompass.analysis.os.linux.core.signals.TmfCpuSelectedSignal;
+import org.eclipse.tracecompass.analysis.os.linux.core.signals.TmfThreadSelectedSignal;
 import org.eclipse.tracecompass.internal.analysis.os.linux.core.kernel.Attributes;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.Messages;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.actions.FollowCpuAction;
+import org.eclipse.tracecompass.internal.analysis.os.linux.ui.actions.FollowThreadAction;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.actions.UnfollowCpuAction;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityViewEntry.AggregatePriorityEntry;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityViewEntry.Type;
@@ -63,6 +65,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
 
     /** ID of the followed CPU in the map data in {@link TmfTraceContext} */
     public static final @NonNull String RESOURCES_FOLLOW_CPU = ID + ".FOLLOW_CPU"; //$NON-NLS-1$
+    public static final @NonNull String RESOURCES_FOLLOW_THREAD = ID + ".FOLLOW_THREAD"; //$NON-NLS-1$
 
     private static final String[] FILTER_COLUMN_NAMES = new String[] {
             Messages.ResourcesView_stateTypeName
@@ -138,6 +141,14 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
                         menuManager.add(new UnfollowCpuAction(PriorityView.this, resourcesEntry.getId(), resourcesEntry.getTrace()));
                     } else {
                         menuManager.add(new FollowCpuAction(PriorityView.this, resourcesEntry.getId(), resourcesEntry.getTrace()));
+                    }
+                }
+                if (resourcesEntry.getType().equals(PriorityViewEntry.Type.THREAD)) {
+                    int thread = resourcesEntry.getId();
+                    KernelAnalysisModule module = TmfTraceUtils.getAnalysisModuleOfClass(resourcesEntry.getTrace(), KernelAnalysisModule.class, KernelAnalysisModule.ID);
+                    String execName = KernelThreadInformationProvider.getExecutableName(module, thread);
+                    if (thread >= 0) {
+                        menuManager.add(new FollowThreadAction(PriorityView.this, execName, resourcesEntry.getId(), resourcesEntry.getTrace()));
                     }
                 }
             }
@@ -484,5 +495,21 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         TmfTraceContext ctx = TmfTraceManager.getInstance().getCurrentTraceContext();
         ctx.setData(RESOURCES_FOLLOW_CPU, data);
     }
+
+
+    /**
+     * Signal handler for a cpu selected signal.
+     *
+     * @param signal
+     *            the cpu selected signal
+     * @since 2.0
+     */
+    @TmfSignalHandler
+    public void listenToThread(TmfThreadSelectedSignal signal) {
+        int data = signal.getThreadId() >= 0 ? signal.getThreadId() : -1;
+        TmfTraceContext ctx = TmfTraceManager.getInstance().getCurrentTraceContext();
+        ctx.setData(RESOURCES_FOLLOW_THREAD, data);
+    }
+
 
 }
