@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -25,10 +26,12 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernel.KernelAnalysisModule;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernel.KernelThreadInformationProvider;
 import org.eclipse.tracecompass.analysis.os.linux.core.signals.TmfCpuSelectedSignal;
 import org.eclipse.tracecompass.analysis.os.linux.core.signals.TmfThreadSelectedSignal;
+import org.eclipse.tracecompass.analysis.timing.core.segmentstore.ISegmentStoreProvider;
 import org.eclipse.tracecompass.internal.analysis.os.linux.core.kernel.Attributes;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.Messages;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.actions.FollowCpuAction;
@@ -36,10 +39,14 @@ import org.eclipse.tracecompass.internal.analysis.os.linux.ui.actions.FollowThre
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.actions.UnfollowCpuAction;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityViewEntry.AggregatePriorityEntry;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityViewEntry.Type;
+import org.eclipse.tracecompass.segmentstore.core.ISegment;
+import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
 import org.eclipse.tracecompass.statesystem.core.exceptions.AttributeNotFoundException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedException;
 import org.eclipse.tracecompass.statesystem.core.interval.ITmfStateInterval;
+import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
+import org.eclipse.tracecompass.tmf.core.segment.ISegmentAspect;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSignalHandler;
 import org.eclipse.tracecompass.tmf.core.statesystem.TmfStateSystemAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
@@ -47,11 +54,15 @@ import org.eclipse.tracecompass.tmf.core.trace.TmfTraceContext;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceManager;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceUtils;
 import org.eclipse.tracecompass.tmf.ui.views.timegraph.AbstractStateSystemTimeGraphView;
+import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.IMarkerEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeGraphEntry;
+import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.MarkerEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.NullTimeEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeGraphEntry;
+
+import com.google.common.collect.Iterables;
 
 /**
  * Main implementation for the priority view
@@ -73,6 +84,8 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
 
     // Timeout between updates in the build thread in ms
     private static final long BUILD_UPDATE_TIMEOUT = 500;
+
+    private static final RGBA CONTENTION_COLOR = new RGBA(200, 100, 30, 70);
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -345,7 +358,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
                 TimeGraphEntry threadEntry = PriorityViewEntry.create(threadQuark, trace, startTime, endTime, Type.THREAD, currenthread, execName);
                 entryMap.put(threadQuark + cpuEntry.getId() * 65536, threadEntry);
                 prioEntry.addChild(threadEntry);
-                if(prioEntry instanceof AggregatePriorityEntry){
+                if (prioEntry instanceof AggregatePriorityEntry) {
                     AggregatePriorityEntry aggregatePriorityEntry = (AggregatePriorityEntry) prioEntry;
                     aggregatePriorityEntry.addContributor(threadEntry);
 
@@ -496,7 +509,6 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         ctx.setData(RESOURCES_FOLLOW_CPU, data);
     }
 
-
     /**
      * Signal handler for a cpu selected signal.
      *
@@ -511,5 +523,32 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         ctx.setData(RESOURCES_FOLLOW_THREAD, data);
     }
 
+    @Override
+    protected @NonNull List<IMarkerEvent> getViewMarkerList(ITmfStateSystem ss,
+            @NonNull List<List<ITmfStateInterval>> fullStates, @Nullable List<ITmfStateInterval> prevFullState, @NonNull IProgressMonitor monitor) {
+        IAnalysisModule module = getFutexModule(getTrace());
+        List<IMarkerEvent> ret = new ArrayList<>();
+        ret.addAll(super.getViewMarkerList(ss, fullStates, prevFullState, monitor));
+        if (!(module instanceof ISegmentStoreProvider)) {
+            return ret;
+        }
+        ISegmentStoreProvider storeProvider = (ISegmentStoreProvider) module;
+        ISegmentAspect aspect = Iterables.<@Nullable ISegmentAspect> getFirst(storeProvider.getSegmentAspects(), null);
+        ISegmentStore<@NonNull ISegment> segmentStore = storeProvider.getSegmentStore();
+        if (aspect == null || segmentStore == null) {
+            return ret;
+        }
+        ret.addAll(segmentStore.stream().map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), getMarkerTitle(aspect, segment), CONTENTION_COLOR, getMarkerTitle(aspect, segment), false))
+                .collect(Collectors.toList()));
+        return ret;
+    }
+
+    protected @Nullable IAnalysisModule getFutexModule(ITmfTrace trace) {
+        return trace.getAnalysisModule("FUTEX ID");
+    }
+
+    private static String getMarkerTitle(ISegmentAspect aspect, @NonNull ISegment segment) {
+        return "Contention " + String.valueOf(aspect.resolve(segment));
+    }
 
 }
