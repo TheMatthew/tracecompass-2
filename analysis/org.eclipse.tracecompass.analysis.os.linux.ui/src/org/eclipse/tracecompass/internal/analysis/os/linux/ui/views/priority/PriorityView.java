@@ -376,7 +376,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
             Type type = priorityEntry.getType();
             switch (type) {
             case CPU:
-                return createCpuEventsList(entry, ssq, fullStates, prevFullState, monitor, priorityEntry.getQuark());
+                return createCpuEventsList(entry, fullStates, prevFullState, monitor, priorityEntry.getQuark());
             case THREAD:
                 return createTreadEventsList(entry, ssq, fullStates, prevFullState, monitor, priorityEntry.getId(), ((PriorityViewEntry) entry.getParent().getParent()).getQuark());
             case NULL:
@@ -404,8 +404,8 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         int threadQuark = priorityEntry.getQuark();
         int statusQuark;
         try {
-            statusQuark = ssq.getQuarkRelative(threadQuark, Attributes.STATUS);
-            cpuStatusQuark = ssq.getQuarkRelative(cpuQuark, Attributes.STATUS);
+            statusQuark = threadQuark;
+            cpuStatusQuark = cpuQuark;
             currentThreadQuark = ssq.getQuarkRelative(cpuQuark, Attributes.CURRENT_THREAD);
         } catch (AttributeNotFoundException e) {
             /*
@@ -449,18 +449,9 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         return eventList;
     }
 
-    private static List<ITimeEvent> createCpuEventsList(ITimeGraphEntry entry, ITmfStateSystem ssq, List<List<ITmfStateInterval>> fullStates, List<ITmfStateInterval> prevFullState, IProgressMonitor monitor, int quark) {
+    private static List<ITimeEvent> createCpuEventsList(ITimeGraphEntry entry, List<List<ITmfStateInterval>> fullStates, List<ITmfStateInterval> prevFullState, IProgressMonitor monitor, int quark) {
         List<ITimeEvent> eventList;
-        int statusQuark;
-        try {
-            statusQuark = ssq.getQuarkRelative(quark, Attributes.STATUS);
-        } catch (AttributeNotFoundException e) {
-            /*
-             * The sub-attribute "status" is not available. May happen if the
-             * trace does not have sched_switch events enabled.
-             */
-            return null;
-        }
+        int statusQuark= quark;
         boolean isZoomThread = Thread.currentThread() instanceof ZoomThread;
         eventList = new ArrayList<>(fullStates.size());
         ITmfStateInterval lastInterval = prevFullState == null || statusQuark >= prevFullState.size() ? null : prevFullState.get(statusQuark);
