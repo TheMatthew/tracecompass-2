@@ -97,7 +97,7 @@ public class PriorityViewEntry extends TimeGraphEntry implements Comparable<ITim
      * @param execName The executable name
      * @return the entry
      */
-    public static TimeGraphEntry create(int quark, @NonNull ITmfTrace trace,
+    public static @NonNull TimeGraphEntry create(int quark, @NonNull ITmfTrace trace,
             long startTime, long endTime, Type type, int id, String execName) {
         switch (type) {
         case CPU:

@@ -76,6 +76,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
 
     /** ID of the followed CPU in the map data in {@link TmfTraceContext} */
     public static final @NonNull String RESOURCES_FOLLOW_CPU = ID + ".FOLLOW_CPU"; //$NON-NLS-1$
+    /** ID of the followed Thread in the map data in {@link TmfTraceContext} */
     public static final @NonNull String RESOURCES_FOLLOW_THREAD = ID + ".FOLLOW_THREAD"; //$NON-NLS-1$
 
     private static final String[] FILTER_COLUMN_NAMES = new String[] {
@@ -96,7 +97,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
      */
     public PriorityView() {
         super(ID, new PriorityPresentationProvider());
-        setTreeColumns(new String[] { "", "TID" });
+        setTreeColumns(new String[] { "", "TID" }); //$NON-NLS-1$ //$NON-NLS-2$
         setTreeLabelProvider(new TreeLabelProvider() {
             @Override
             public String getColumnText(Object element, int columnIndex) {
@@ -110,7 +111,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
                     }
                     return ""; //$NON-NLS-1$
                 }
-                return "";
+                return ""; //$NON-NLS-1$
             }
         });
         setFilterColumns(FILTER_COLUMN_NAMES);
@@ -129,7 +130,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
                 return entry1.getName().compareTo(entry2.getName());
             } else if (entry1 instanceof Comparable) {
                 /* sort resource entries by their defined order */
-                Comparable comparable = (Comparable) entry1;
+                Comparable<ITimeGraphEntry> comparable = (Comparable<ITimeGraphEntry>) entry1;
                 return comparable.compareTo(entry2);
             }
             return 0;
@@ -159,6 +160,9 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
                 if (resourcesEntry.getType().equals(PriorityViewEntry.Type.THREAD)) {
                     int thread = resourcesEntry.getId();
                     KernelAnalysisModule module = TmfTraceUtils.getAnalysisModuleOfClass(resourcesEntry.getTrace(), KernelAnalysisModule.class, KernelAnalysisModule.ID);
+                    if(module == null) {
+                        return;
+                    }
                     String execName = KernelThreadInformationProvider.getExecutableName(module, thread);
                     if (thread >= 0) {
                         menuManager.add(new FollowThreadAction(PriorityView.this, execName, resourcesEntry.getId(), resourcesEntry.getTrace()));
@@ -305,7 +309,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
             int cpu = Integer.parseInt(cpuName);
             TimeGraphEntry cpuEntry = entryMap.get(cpuQuark);
             if (cpuEntry == null) {
-                cpuEntry = PriorityViewEntry.create(cpuQuark, trace, startTime, endTime, Type.CPU, cpu, Type.CPU.toString() + " " + cpu);
+                cpuEntry = PriorityViewEntry.create(cpuQuark, trace, startTime, endTime, Type.CPU, cpu, Type.CPU.toString() + " " + cpu); //$NON-NLS-1$
                 entryMap.put(cpuQuark, cpuEntry);
                 traceEntry.addChild(cpuEntry);
             } else {
@@ -334,6 +338,9 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
             int prioQ = ssq.getQuarkRelative(threadQuark, Attributes.PRIO);
             int prio = ssq.querySingleState(currentThreadInterval.getStartTime(), prioQ).getStateValue().unboxInt();
             KernelAnalysisModule module = TmfTraceUtils.getAnalysisModuleOfClass(trace, KernelAnalysisModule.class, KernelAnalysisModule.ID);
+            if( module == null) {
+                continue;
+            }
             String execName = KernelThreadInformationProvider.getExecutableName(module, currenthread);
 
             TimeGraphEntry prioEntry = entryMap.get(prio - cpuEntry.getId() * 256);
@@ -535,11 +542,11 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
     }
 
     protected @Nullable IAnalysisModule getFutexModule(ITmfTrace trace) {
-        return trace.getAnalysisModule("FUTEX ID");
+        return trace.getAnalysisModule("FUTEX ID"); //$NON-NLS-1$
     }
 
     private static String getMarkerTitle(ISegmentAspect aspect, @NonNull ISegment segment) {
-        return "Contention " + String.valueOf(aspect.resolve(segment));
+        return "Contention " + String.valueOf(aspect.resolve(segment)); //$NON-NLS-1$
     }
 
 }
