@@ -420,7 +420,10 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
         return root;
     }
 
-    private void setStats(List<ITmfTreeViewerEntry> entryList, AbstractSegmentStatisticsAnalysis module, String rootName) {
+    /**
+     * @since 1.1
+     */
+    protected void setStats(List<ITmfTreeViewerEntry> entryList, AbstractSegmentStatisticsAnalysis module, String rootName) {
         boolean isSelection = !rootName.equals(getTotalLabel()) ? true : false;
         final SegmentStoreStatistics entry = module.getTotalStats(isSelection);
         if (entry != null) {
