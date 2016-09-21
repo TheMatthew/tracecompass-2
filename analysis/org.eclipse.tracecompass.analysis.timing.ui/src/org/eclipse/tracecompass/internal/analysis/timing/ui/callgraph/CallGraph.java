@@ -91,7 +91,10 @@ public class CallGraph extends ViewPart {
             }
             fFlamegraphModule.waitForCompletion(monitor);
             List<@NonNull Map<@NonNull Long, @NonNull CallGraphNode>> callGraphThreads = fFlamegraphModule.getCallGraphThreads();
-            Map<@NonNull Long, @NonNull CallGraphNode> list = callGraphThreads.get(0);
+            if (callGraphThreads.isEmpty()) {
+                return Status.OK_STATUS;
+            }
+                Map<@NonNull Long, @NonNull CallGraphNode> list = callGraphThreads.get(0);
             Display.getDefault().syncExec(() -> {
                 long totaltime = 0;
                 Collection<@NonNull CallGraphNode> values = list.values();
