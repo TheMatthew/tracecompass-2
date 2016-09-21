@@ -28,6 +28,23 @@ import com.google.common.collect.Iterables;
 public class InAndOutAnalysis extends AbstractSegmentStoreAnalysisEventBasedModule {
 
     private static final Map<String, IInAndOutHandler> HANDLERS = new HashMap<>();
+
+    static {
+        HANDLERS.put("i2c_write", (ITmfEvent event, Map<String, ITmfTimestamp> currentStack, Collection<@NonNull ISegment> store, Collection<@NonNull ISegment> markers) -> currentStack.put("I2C_WRITE", event.getTimestamp())); //$NON-NLS-1$ //$NON-NLS-2$
+        HANDLERS.put("i2c_read", (ITmfEvent event, Map<String, ITmfTimestamp> currentStack, Collection<@NonNull ISegment> store, Collection<@NonNull ISegment> markers) -> currentStack.put("I2C_READ", event.getTimestamp())); //$NON-NLS-1$ //$NON-NLS-2$
+        HANDLERS.put("i2c_reply", (ITmfEvent event, Map<String, ITmfTimestamp> currentStack, Collection<@NonNull ISegment> store, Collection<@NonNull ISegment> markers) -> { //$NON-NLS-1$
+            ITmfTimestamp ts = event.getTimestamp();
+            ITmfTimestamp writeTime = currentStack.get("I2C_WRITE"); //$NON-NLS-1$
+            if( writeTime != null){
+                store.add(new InAndOutSegment(writeTime.toNanos(),ts.toNanos(), "i2c write")); //$NON-NLS-1$
+            }
+            ITmfTimestamp readTime = currentStack.get("I2C_READ"); //$NON-NLS-1$
+            if( readTime != null){
+                store.add(new InAndOutSegment(readTime.toNanos(), ts.toNanos(), "i2c read")); //$NON-NLS-1$
+            }
+        });
+
+    }
     private List<@NonNull ISegment> fMarkers = new ArrayList<>();
     private Collection<@NonNull ISegment> fExposedMarker = Collections.unmodifiableList(fMarkers);
 
@@ -86,9 +103,9 @@ public class InAndOutAnalysis extends AbstractSegmentStoreAnalysisEventBasedModu
 
     private class FS2AnalysisRequest extends AbstractSegmentStoreAnalysisRequest {
 
-        private static final String BEGIN_SUFFIX = "_begin";
+        private static final String BEGIN_SUFFIX = "_begin"; //$NON-NLS-1$
 
-        private static final String END_SUFFIX = "_end";
+        private static final String END_SUFFIX = "_end"; //$NON-NLS-1$
 
         private final Map<String, ITmfTimestamp> fOngoingFunctions = new HashMap<>();
 
