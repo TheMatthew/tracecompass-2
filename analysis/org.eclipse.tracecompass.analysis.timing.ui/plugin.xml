@@ -101,7 +101,7 @@
             restorable="true">
       </view>
       <view
-<<<<<<< HEAD
+
 
             category="org.eclipse.linuxtools.tmf.ui.views.category"
             class="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.statistics.CallGraphStatisticsView"
@@ -111,7 +111,7 @@
             class="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.CallGraph"
             id="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.cgraph"
             name="Call Graph"
-=======
+            ></view><view 
             category="org.eclipse.linuxtools.tmf.ui.views.category"
             class="org.eclipse.tracecompass.internal.analysis.timing.ui.inandout.views.InAndOutDensityView"
             icon="icons/elcl16/EntryNExit.png"
@@ -149,7 +149,6 @@
             icon="icons/elcl16/EntryNExit.png"
             id="org.eclipse.tracecompass.inandoutchart"
             name="In-N-Out Chart"
->>>>>>> ea3ab05... timing.ui: add In-N-Out analysis
             restorable="true">
       </view>
    </extension>
