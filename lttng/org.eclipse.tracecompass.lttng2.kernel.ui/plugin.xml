@@ -16,6 +16,7 @@
             allowMultiple="false"
             category="org.eclipse.linuxtools.tmf.ui.views.category"
             class="org.eclipse.tracecompass.internal.lttng2.kernel.ui.views.vm.vcpuview.VirtualMachineView"
+            icon="icons/eview16/virt.png"
             id="org.eclipse.tracecompass.lttng2.analysis.vm.ui.vmview"
             name="%vcpuview.name"
             restorable="true">

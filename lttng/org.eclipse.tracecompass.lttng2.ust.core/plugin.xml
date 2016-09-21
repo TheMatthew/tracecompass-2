@@ -16,6 +16,7 @@
          point="org.eclipse.linuxtools.tmf.core.analysis">
       <module
             analysis_module="org.eclipse.tracecompass.lttng2.ust.core.analysis.memory.UstMemoryAnalysisModule"
+            icon="icons/memusage.png"
             id="org.eclipse.linuxtools.lttng2.ust.analysis.memory"
             name="Ust Memory">
          <tracetype
@@ -36,6 +37,7 @@
       <module
             analysis_module="org.eclipse.tracecompass.internal.lttng2.ust.core.callstack.LttngUstCallStackAnalysis"
             automatic="false"
+            icon="icons/callstack_view.gif"
             id="org.eclipse.linuxtools.lttng2.ust.analysis.callstack"
             name="%analysis.callstack">
          <tracetype

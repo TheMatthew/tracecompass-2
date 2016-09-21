@@ -22,6 +22,7 @@
       <module
             analysis_module="org.eclipse.tracecompass.internal.lttng2.kernel.core.analysis.vm.module.VirtualMachineCpuAnalysis"
             automatic="false"
+            icon="icons/virt.png"
             id="org.eclipse.tracecompass.lttng2.analysis.vm.core.VirtualMachineAnalysisModule"
             name="Virtual Machine Analysis">
             <tracetype
@@ -32,6 +33,7 @@
       <module
             analysis_module="org.eclipse.tracecompass.internal.lttng2.kernel.core.analysis.graph.building.LttngKernelExecutionGraph"
             applies_experiment="true"
+            icon="icons/kernelgraph.png"
             id="org.eclipse.tracecompass.lttng2.kernel.core.execgraph"
             name="LTTng Kernel Exec Graph">
          <tracetype
