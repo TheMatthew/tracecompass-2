@@ -87,7 +87,7 @@ public abstract class AbstractSegmentStatisticsAnalysis extends TmfAbstractAnaly
      * Get the segment store from which we want the statistics
      *
      * @return The segment store
-     * @since 2.0
+     * @since 1.2
      */
     protected Collection<@NonNull ISegment> getSegmentStore() {
         IAnalysisModule segmentStoreProviderModule = fSegmentStoreProviderModule;
@@ -142,7 +142,7 @@ public abstract class AbstractSegmentStatisticsAnalysis extends TmfAbstractAnaly
      *            The progress monitor
      * @return True if the update succeed, false otherwise
      *
-     * @since 2.0
+     * @since 1.2
      */
     public boolean updateSelectionStats(long start, long end, IProgressMonitor monitor) {
         Collection<@NonNull ISegment> selection = Collections.EMPTY_LIST;
@@ -188,15 +188,33 @@ public abstract class AbstractSegmentStatisticsAnalysis extends TmfAbstractAnaly
     /**
      * The total statistics
      *
+     * @return the total statistics
+     */
+    public @Nullable SegmentStoreStatistics getTotalStats() {
+        return getTotalStats(false);
+    }
+
+    /**
+     * The total statistics
+     *
      * @param isSelection
      *            Tells whether the statistics requested is for a selection or
      *            the whole trace
      *
      * @return the total statistics
-     * @since 2.0
+     * @since 1.2
      */
     public @Nullable SegmentStoreStatistics getTotalStats(boolean isSelection) {
         return isSelection ? fTotalStats[1] : fTotalStats[0];
+    }
+
+    /**
+     * The per syscall statistics
+     *
+     * @return the per syscall statistics
+     */
+    public @Nullable Map<String, SegmentStoreStatistics> getPerSegmentTypeStats() {
+        return getPerSegmentTypeStats(false);
     }
 
     /**
@@ -207,7 +225,7 @@ public abstract class AbstractSegmentStatisticsAnalysis extends TmfAbstractAnaly
      *            the whole trace
      *
      * @return the per syscall statistics
-     * @since 2.0
+     * @since 1.2
      */
     public @Nullable Map<String, SegmentStoreStatistics> getPerSegmentTypeStats(boolean isSelection) {
         return isSelection ? fPerSegmentTypeStats.get(1) : fPerSegmentTypeStats.get(0);

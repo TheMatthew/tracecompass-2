@@ -421,7 +421,7 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
     }
 
     /**
-     * @since 1.1
+     * @since 1.2
      */
     protected void setStats(List<ITmfTreeViewerEntry> entryList, AbstractSegmentStatisticsAnalysis module, String rootName) {
         boolean isSelection = !rootName.equals(getTotalLabel()) ? true : false;
@@ -473,7 +473,7 @@ public abstract class AbstractSegmentStoreStatisticsViewer extends AbstractTmfTr
      * Get the selection column label
      *
      * @return The selection column label
-     * @since 1.1
+     * @since 1.2
      */
     protected String getSelectionLabel() {
         return checkNotNull(Messages.AbstractSegmentStoreStatisticsViewer_selection);
