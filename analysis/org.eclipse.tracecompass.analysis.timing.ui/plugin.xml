@@ -42,7 +42,7 @@
             class="org.eclipse.tracecompass.tmf.ui.analysis.TmfAnalysisViewOutput"
             id="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.statistics.callgraphStatistics">
          <analysisModuleClass
-               class="org.eclipse.tracecompass.internal.analysis.timing.core.callgraph.CallGraphStatisticsAnalysis">
+               class="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.CallGraphStatisticsAnalysisUI">
          </analysisModuleClass>
 </output>
       <output
@@ -102,7 +102,6 @@
       </view>
       <view
 
-
             category="org.eclipse.linuxtools.tmf.ui.views.category"
             class="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.statistics.CallGraphStatisticsView"
             id="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.statistics.callgraphStatistics"
@@ -110,8 +109,9 @@
 		
             class="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.CallGraph"
             id="org.eclipse.tracecompass.internal.analysis.timing.ui.callgraph.cgraph"
-            name="Call Graph"
-            ></view><view 
+            name="Call Graph">
+    </view>
+  	<view
             category="org.eclipse.linuxtools.tmf.ui.views.category"
             class="org.eclipse.tracecompass.internal.analysis.timing.ui.inandout.views.InAndOutDensityView"
             icon="icons/elcl16/EntryNExit.png"
