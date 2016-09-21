@@ -436,6 +436,9 @@
 		<xs:attribute name="consuming" type="xs:boolean" use="optional" default="true">
 			<xs:annotation>
 				<xs:documentation>ONLY USE for fsm. Specifies if this FSM is consuming or not. If the FSM is consuming the ongoing event can be used by only one scenario of the FSM, if not, the ongoing scenario can be used in one or several scenario of the FSM. If not specified, this attribute will be set to 'true' by default.</xs:documentation></xs:annotation></xs:attribute>
+		<xs:attribute name="followChain" type="xs:boolean" use="optional">
+			<xs:annotation>
+				<xs:documentation>ONLY USE for fsm. Specifies if this FSM steps will be followed and create subsegments if necessary.</xs:documentation></xs:annotation></xs:attribute>
 	</xs:complexType>
 
 	<xs:complexType name="transition">

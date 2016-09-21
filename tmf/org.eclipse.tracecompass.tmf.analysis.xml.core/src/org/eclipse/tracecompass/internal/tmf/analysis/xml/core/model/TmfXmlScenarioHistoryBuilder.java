@@ -8,15 +8,22 @@
  ******************************************************************************/
 package org.eclipse.tracecompass.internal.tmf.analysis.xml.core.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.Activator;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.module.IXmlStateSystemContainer;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.stateprovider.TmfXmlStrings;
+import org.eclipse.tracecompass.segmentstore.core.BasicSegment;
+import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystemBuilder;
+import org.eclipse.tracecompass.statesystem.core.StateSystemUtils;
+import org.eclipse.tracecompass.statesystem.core.exceptions.AttributeNotFoundException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateValueTypeException;
 import org.eclipse.tracecompass.statesystem.core.interval.ITmfStateInterval;
@@ -433,5 +440,30 @@ public class TmfXmlScenarioHistoryBuilder {
         long ts = getTimestamp(event, ss);
         TmfAttributePool pool = getPoolFor(container, info.getFsmId());
         pool.recycle(info.getQuark(), ts);
+    }
+
+    /**
+     * @param container
+     * @param parentQuark
+     * @param start
+     * @param end
+     * @return
+     */
+    public List<@NonNull ISegment> getScenarioStates(final IXmlStateSystemContainer container, int parentQuark, long start, long end) {
+List<ISegment> segments = new ArrayList<>();
+        ITmfStateSystemBuilder ss = (ITmfStateSystemBuilder) container.getStateSystem();
+        try {
+            int quark = ss.getQuarkRelative(parentQuark, "state"); //$NON-NLS-1$
+            for (@NonNull ITmfStateInterval interval : StateSystemUtils.queryHistoryRange(ss, quark, start, end)) {
+                segments.add(new BasicSegment(interval.getStartTime(), interval.getEndTime()));
+            }
+            long lastEnd = segments.get(segments.size() - 1).getEnd();
+            if (lastEnd < end) {
+                segments.add(new BasicSegment(lastEnd + 1, end));
+            }
+        } catch (AttributeNotFoundException e) {
+        } catch (StateSystemDisposedException e) {
+        }
+        return segments;
     }
 }

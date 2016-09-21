@@ -16,12 +16,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.Activator;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.module.IXmlStateSystemContainer;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.pattern.stateprovider.XmlPatternStateProvider;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.segment.TmfXmlPatternCompositeSegment;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.segment.TmfXmlPatternSegment;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.stateprovider.TmfXmlStrings;
+import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.statesystem.core.exceptions.AttributeNotFoundException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateValueTypeException;
 import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
@@ -98,18 +101,30 @@ public class TmfXmlPatternSegmentBuilder {
      *            no scenario.
      * @return The pattern segment generated
      */
-    public TmfXmlPatternSegment generatePatternSegment(ITmfEvent event, ITmfTimestamp start, ITmfTimestamp end, @Nullable TmfXmlScenarioInfo scenarioInfo) {
+    public ISegment generatePatternSegment(ITmfEvent event, ITmfTimestamp start, ITmfTimestamp end, @Nullable TmfXmlScenarioInfo scenarioInfo) {
         int scale = event.getTimestamp().getScale();
         long startValue = start.toNanos();
         long endValue = end.toNanos();
         String segmentName = getPatternSegmentName(event, scenarioInfo);
         Map<String, ITmfStateValue> fields = new HashMap<>();
         setPatternSegmentContent(event, fields, scenarioInfo);
-        TmfXmlPatternSegment segment = new TmfXmlPatternSegment(startValue, endValue, scale, segmentName, fields);
+        ISegment segment;
+        if (fContainer instanceof XmlPatternStateProvider && scenarioInfo != null && ((XmlPatternStateProvider) fContainer).getChainId().equals(scenarioInfo.getFsmId())) {
+            List<ISegment> subSegments = buildSubSegments(start.getValue(), end.getValue(), scenarioInfo);
+            segment = new TmfXmlPatternCompositeSegment(startValue, endValue, scale, segmentName, fields, subSegments);
+        } else {
+            segment = new TmfXmlPatternSegment(startValue, endValue, scale, segmentName, fields);
+        }
         if (fContainer instanceof XmlPatternStateProvider) {
             ((XmlPatternStateProvider) fContainer).getListener().onNewSegment(segment);
         }
         return segment;
+    }
+
+    private List<@NonNull ISegment> buildSubSegments(long start, long end, TmfXmlScenarioInfo scenarioInfo) {
+        @NonNull
+        TmfXmlScenarioHistoryBuilder historyBuilder = ((XmlPatternStateProvider) fContainer).getHistoryBuilder();
+        return historyBuilder.getScenarioStates(fContainer, scenarioInfo.getQuark(), start, end);
     }
 
     /**

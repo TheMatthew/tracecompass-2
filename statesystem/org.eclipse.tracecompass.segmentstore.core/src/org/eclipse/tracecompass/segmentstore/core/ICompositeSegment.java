@@ -14,7 +14,7 @@ import java.util.List;
  * Interface for composite segments
  *
  * @author Bernd Hufmann
- * @since 1.0
+ * @since 1.1
  */
 public interface ICompositeSegment {
     /**

@@ -70,7 +70,6 @@ public class CallGraphAnalysisTest {
         public @NonNull Iterable<@NonNull ISegmentAspect> getSegmentAspects() {
             return Collections.EMPTY_LIST;
         }
-
     }
 
     private static ITmfStateSystemBuilder createFixture() {

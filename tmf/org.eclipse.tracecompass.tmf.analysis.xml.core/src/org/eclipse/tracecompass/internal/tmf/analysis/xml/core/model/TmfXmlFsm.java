@@ -21,6 +21,7 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.Activator;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.module.IXmlStateSystemContainer;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.pattern.stateprovider.XmlPatternStateProvider;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.stateprovider.TmfXmlStrings;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.w3c.dom.Element;
@@ -50,6 +51,7 @@ public class TmfXmlFsm {
     private final boolean fConsuming;
     private boolean fEventConsumed;
     private int fTotalScenarios;
+    private boolean fFollowChain;
     private @Nullable TmfXmlScenario fPendingScenario;
 
     /**
@@ -67,6 +69,7 @@ public class TmfXmlFsm {
         String id = node.getAttribute(TmfXmlStrings.ID);
         boolean consuming = node.getAttribute(TmfXmlStrings.CONSUMING).isEmpty() ? true : Boolean.parseBoolean(node.getAttribute(TmfXmlStrings.CONSUMING));
         boolean instanceMultipleEnabled = node.getAttribute(TmfXmlStrings.MULTIPLE).isEmpty() ? true : Boolean.parseBoolean(node.getAttribute(TmfXmlStrings.MULTIPLE));
+        boolean followChain = node.getAttribute(TmfXmlStrings.FOLLOW_CHAIN).isEmpty() ? false : Boolean.parseBoolean(node.getAttribute(TmfXmlStrings.FOLLOW_CHAIN));
         final List<@NonNull TmfXmlBasicTransition> preconditions = new ArrayList<>();
 
         // Get the preconditions
@@ -76,6 +79,7 @@ public class TmfXmlFsm {
         }
 
         // Get the initial state and the preconditions
+        List<@NonNull String> chain = new ArrayList<>();
         Map<@NonNull String, @NonNull TmfXmlState> statesMap = new HashMap<>();
         String initialState = node.getAttribute(TmfXmlStrings.INITIAL);
         NodeList nodesInitialElement = node.getElementsByTagName(TmfXmlStrings.INITIAL);
@@ -100,6 +104,9 @@ public class TmfXmlFsm {
             }
         }
 
+//        if (followChain && !initialState.isEmpty()) {
+//            chain.add(NonNullUtils.checkNotNull(statesMap.get(initialState)).getId());
+//        }
 
         // Get the FSM states
         NodeList nodesState = node.getElementsByTagName(TmfXmlStrings.STATE);
@@ -112,6 +119,10 @@ public class TmfXmlFsm {
             // declared in the fsm description as initial state
             if (initialState.isEmpty()) {
                 initialState = state.getId();
+//                chain.add(state.getId());
+            }
+            if (followChain && !state.getId().equals(initialState)) {
+                chain.add(state.getId());
             }
         }
 
@@ -128,6 +139,9 @@ public class TmfXmlFsm {
             if (!finalStateId.isEmpty()) {
                 TmfXmlState finalState = modelFactory.createState(finalElement, container, null);
                 statesMap.put(finalState.getId(), finalState);
+//                if (followChain) {
+//                    chain.add(finalStateId);
+//                }
             }
         }
 
@@ -142,11 +156,14 @@ public class TmfXmlFsm {
                 statesMap.put(abandonState.getId(), abandonState);
             }
         }
-        return new TmfXmlFsm(modelFactory, container, id, consuming, instanceMultipleEnabled, initialState, finalStateId, abandonStateId, preconditions, statesMap);
+        if (followChain) {
+            ((XmlPatternStateProvider)container).setChain(id, chain);
+        }
+        return new TmfXmlFsm(modelFactory, container, id, consuming, instanceMultipleEnabled, followChain, initialState, finalStateId, abandonStateId, preconditions, statesMap);
     }
 
     private TmfXmlFsm(ITmfXmlModelFactory modelFactory, IXmlStateSystemContainer container, String id, boolean consuming,
-            boolean multiple, String initialState, String finalState, String abandonState, List<TmfXmlBasicTransition> preconditions,
+            boolean multiple, boolean followChain, String initialState, String finalState, String abandonState, List<TmfXmlBasicTransition> preconditions,
             Map<String, TmfXmlState> states) {
         fModelFactory = modelFactory;
         fTotalScenarios = 0;
@@ -154,6 +171,7 @@ public class TmfXmlFsm {
         fId = id;
         fConsuming = consuming;
         fInstanceMultipleEnabled = multiple;
+        fFollowChain = followChain;
         fInitialStateId = initialState;
         fFinalStateId = finalState;
         fAbandonStateId = abandonState;
@@ -219,6 +237,15 @@ public class TmfXmlFsm {
 
     private boolean isEventConsumed() {
         return fEventConsumed;
+    }
+
+    /**
+     * Tells whether the steps of this fsm are followed
+     *
+     * @return True if there are followed, false otherwise
+     */
+    public boolean isFollowChain() {
+        return fFollowChain;
     }
 
     /**

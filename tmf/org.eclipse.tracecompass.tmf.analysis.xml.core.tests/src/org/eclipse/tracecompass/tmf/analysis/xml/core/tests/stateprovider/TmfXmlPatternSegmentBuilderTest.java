@@ -22,6 +22,7 @@ import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.model.readwrite.T
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.module.XmlUtils;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.segment.TmfXmlPatternSegment;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.stateprovider.TmfXmlStrings;
+import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.tests.common.TmfXmlTestFiles;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.tests.module.XmlUtilsTest;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.tests.stubs.PatternSegmentFactoryStub;
@@ -93,10 +94,10 @@ public class TmfXmlPatternSegmentBuilderTest {
         assertNotNull("builder", builder);
 
         //Create a pattern segment and test its content
-        TmfXmlPatternSegment segment = builder.generatePatternSegment(PatternSegmentFactoryStub.TEST_2_END_EVENT,
+        ISegment segment = builder.generatePatternSegment(PatternSegmentFactoryStub.TEST_2_END_EVENT,
                 PatternSegmentFactoryStub.TEST_2_START_EVENT.getTimestamp(),
                 PatternSegmentFactoryStub.TEST_2_END_EVENT.getTimestamp(),
                 null);
-        XmlUtilsTest.testPatternSegmentData(PatternSegmentFactoryStub.TEST_2, segment);
+        XmlUtilsTest.testPatternSegmentData(PatternSegmentFactoryStub.TEST_2, (TmfXmlPatternSegment) segment);
     }
 }

@@ -27,6 +27,7 @@ public class XmlPatternStateSystemModule extends TmfStateSystemAnalysisModule {
 
     private @Nullable IPath fXmlFile;
     private final ISegmentListener fListener;
+    private @Nullable XmlPatternStateProvider fProvider;
 
     /**
      * Constructor
@@ -41,8 +42,12 @@ public class XmlPatternStateSystemModule extends TmfStateSystemAnalysisModule {
 
     @Override
     protected @NonNull ITmfStateProvider createStateProvider() {
-        String id = getId();
-        return new XmlPatternStateProvider(checkNotNull(getTrace()), id, fXmlFile, fListener);
+        XmlPatternStateProvider provider = fProvider;
+        if (provider == null) {
+            provider = new XmlPatternStateProvider(checkNotNull(getTrace()), getId(), fXmlFile, fListener);
+            fProvider = provider;
+        }
+        return provider;
     }
 
     /**
@@ -55,4 +60,12 @@ public class XmlPatternStateSystemModule extends TmfStateSystemAnalysisModule {
         fXmlFile = file;
     }
 
+    /**
+     * Get the pattern state provider
+     *
+     * @return The provider
+     */
+    public XmlPatternStateProvider getProvider() {
+        return (XmlPatternStateProvider) createStateProvider();
+    }
 }

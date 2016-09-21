@@ -11,6 +11,7 @@ package org.eclipse.tracecompass.internal.tmf.analysis.xml.core.pattern.statepro
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,8 +21,8 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.Activator;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.model.ITmfXmlModelFactory;
-import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.model.TmfXmlMapEntry;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.model.TmfXmlLocation;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.model.TmfXmlMapEntry;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.model.TmfXmlPatternEventHandler;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.model.TmfXmlScenarioHistoryBuilder;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.model.readwrite.TmfXmlReadWriteModelFactory;
@@ -42,6 +43,24 @@ import org.w3c.dom.NodeList;
  * @author Jean-Christian Kouame
  */
 public class XmlPatternStateProvider extends AbstractTmfStateProvider implements IXmlStateSystemContainer {
+
+    private class FsmChain {
+        private String fId;
+        private List<String> fStates;
+
+        public FsmChain(String id, List<String> states) {
+            fId = id;
+            fStates = states;
+        }
+
+        public String getId() {
+            return fId;
+        }
+
+        public List<String> getStates() {
+            return fStates;
+        }
+    }
 
     private final IPath fFilePath;
 
@@ -64,6 +83,7 @@ public class XmlPatternStateProvider extends AbstractTmfStateProvider implements
 
     private final @NonNull TmfXmlScenarioHistoryBuilder fHistoryBuilder;
 
+    private @Nullable FsmChain fChain;
     /**
      * @param trace
      *            The active trace
@@ -248,5 +268,35 @@ public class XmlPatternStateProvider extends AbstractTmfStateProvider implements
      */
     public @Nullable Set<@NonNull TmfXmlMapEntry> getMappingGroup(@NonNull String id) {
         return fMappingGroups.get(id);
+    }
+
+    /**
+     * Set the fsm chain to follow
+     *
+     * @param id
+     *            The id of the fsm
+     * @param states
+     *            The list of states
+     */
+    public void setChain(String id, List<@NonNull String> states) {
+        fChain = new FsmChain(id, states);
+    }
+
+    /**
+     * Get the fsm chain id
+     *
+     * @return The chain id
+     */
+    public String getChainId() {
+        return NonNullUtils.checkNotNull(fChain).getId();
+    }
+
+    /**
+     * Get the fsm chain states
+     *
+     * @return The chain states
+     */
+    public List<String> getChainStates() {
+        return NonNullUtils.checkNotNull(fChain).getStates();
     }
 }

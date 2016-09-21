@@ -169,4 +169,5 @@ public interface TmfXmlStrings {
     String MAPPING_GROUP = "mappingGroup";
     String ENTRY = "entry";
     String INITIAL_STATE = "initialState";
+    String FOLLOW_CHAIN = "followChain";
 }

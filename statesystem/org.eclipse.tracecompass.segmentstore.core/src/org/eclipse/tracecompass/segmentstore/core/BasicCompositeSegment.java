@@ -18,7 +18,7 @@ import com.google.common.collect.ImmutableList;
  * Basic implementation of a composite segment
  *
  * @author Bernd Hufmann
- * @since 1.0
+ * @since 1.1
  */
 public class BasicCompositeSegment extends BasicSegment implements ICompositeSegment {
 

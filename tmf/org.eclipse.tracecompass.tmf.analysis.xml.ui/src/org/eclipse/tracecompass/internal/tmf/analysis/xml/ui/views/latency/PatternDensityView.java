@@ -14,7 +14,6 @@ import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Table;
 import org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.density.AbstractSegmentStoreDensityView;
 import org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.density.AbstractSegmentStoreDensityViewer;
 import org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.table.AbstractSegmentStoreTableViewer;
@@ -76,8 +75,8 @@ public class PatternDensityView extends AbstractSegmentStoreDensityView {
             @Override
             protected void createProviderColumns() {
                 super.createProviderColumns();
-                Table t = (Table) getControl();
-                t.setColumnOrder(new int[] { 0, 1, 2, 3, 4});
+//                Table t = (Table) getControl();
+//                t.setColumnOrder(new int[] { 0, 1, 2, 3, 4});
             }
         };
         fTableViewer = tableViewer;

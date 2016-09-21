@@ -11,6 +11,9 @@ package org.eclipse.tracecompass.internal.tmf.analysis.xml.core.pattern.statepro
 import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
 import java.io.File;
+import java.text.DecimalFormat;
+import java.text.Format;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -23,8 +26,11 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.IAnalysisProgressListener;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.ISegmentStoreProvider;
+import org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.SubSecondTimeWithUnitFormat;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.model.TmfXmlPatternSegmentBuilder;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.segment.TmfXmlPatternCompositeSegment;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.segment.TmfXmlPatternSegment;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.stateprovider.TmfXmlStrings;
 import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
@@ -61,6 +67,8 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
     private XmlPatternStateSystemModule fStateSystemModule;
     private XmlPatternSegmentStoreModule fSegmentStoreModule;
     private boolean fInitializationSucceeded;
+    private static final Format FORMATTER = new SubSecondTimeWithUnitFormat();
+    private static final Format DECIMAL_FORMAT = new DecimalFormat("#.###"); //$NON-NLS-1$
 
     /**
      * Constructor
@@ -246,7 +254,72 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
 
     @Override
     public Iterable<ISegmentAspect> getSegmentAspects() {
-        return ImmutableList.of(PatternSegmentNameAspect.INSTANCE, PatternSegmentContentAspect.INSTANCE);
+        return buildChainAspects(fStateSystemModule.getProvider(), ImmutableList.of(PatternSegmentNameAspect.INSTANCE, PatternSegmentContentAspect.INSTANCE));
+    }
+
+    private @NonNull
+    static Iterable<ISegmentAspect> buildChainAspects(XmlPatternStateProvider provider, @NonNull ImmutableList<ISegmentAspect> immutableList) {
+        @NonNull List<ISegmentAspect> aspects = new ArrayList<>();
+        aspects.addAll(immutableList);
+        final String prefix = "Time to "; //$NON-NLS-1$
+        for (int i = 0; i < provider.getChainStates().size(); i++) {
+            String stateId = provider.getChainStates().get(i);
+            final int index = i;
+            aspects.add(new ISegmentAspect() {
+
+                @Override
+                public @Nullable Object resolve(@NonNull ISegment segment) {
+                    if (segment instanceof TmfXmlPatternCompositeSegment) {
+                        TmfXmlPatternCompositeSegment composite = (TmfXmlPatternCompositeSegment) segment;
+                        ISegment subSegment = composite.getSubSegments().get(index);
+                        return String.format("%s", FORMATTER.format(subSegment.getLength())) + " (" + DECIMAL_FORMAT.format((100.0 * subSegment.getLength() / segment.getLength())) + "%)"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                    }
+                    return TmfXmlStrings.NULL;
+                }
+
+                @Override
+                public @NonNull String getName() {
+                    return prefix + stateId;
+                }
+
+                @Override
+                public @NonNull String getHelpText() {
+                    return prefix + stateId;
+                }
+
+                @Override
+                public @Nullable Comparator<?> getComparator() {
+                    return new Comparator<ISegment>() {
+                        @Override
+                        public int compare(@Nullable ISegment o1, @Nullable ISegment o2) {
+                            if (o1 == null || o2 == null) {
+                                throw new IllegalArgumentException();
+                            }
+                            if (o1 instanceof TmfXmlPatternCompositeSegment && o2 instanceof TmfXmlPatternCompositeSegment) {
+                                TmfXmlPatternCompositeSegment c1 = (TmfXmlPatternCompositeSegment) o1;
+                                ISegment ss1 = c1.getSubSegments().get(index);
+
+                                TmfXmlPatternCompositeSegment c2 = (TmfXmlPatternCompositeSegment) o2;
+                                ISegment ss2 = c2.getSubSegments().get(index);
+                                return Long.compare(ss1.getLength(), ss2.getLength());
+                            }
+                            return Long.compare(o1.getLength(), o2.getLength());
+                        }
+                    };
+                }
+            });
+        }
+        return aspects;
+    }
+
+    /**
+     * Get the fsm chain id
+     *
+     * @return The id
+     */
+    public String getChainId() {
+        XmlPatternStateProvider provider = fStateSystemModule.getProvider();
+        return provider != null ? provider.getChainId() : TmfXmlStrings.NULL;
     }
 
     private static class PatternSegmentNameAspect implements ISegmentAspect {
@@ -270,6 +343,9 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
         public @Nullable String resolve(ISegment segment) {
             if (segment instanceof TmfXmlPatternSegment) {
                 return ((TmfXmlPatternSegment) segment).getName()
+                        .substring(TmfXmlPatternSegmentBuilder.PATTERN_SEGMENT_NAME_PREFIX.length());
+            } else if (segment instanceof TmfXmlPatternCompositeSegment) {
+                return ((TmfXmlPatternCompositeSegment) segment).getName()
                         .substring(TmfXmlPatternSegmentBuilder.PATTERN_SEGMENT_NAME_PREFIX.length());
             }
             return EMPTY_STRING;
@@ -297,6 +373,9 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
         public @Nullable String resolve(ISegment segment) {
             if (segment instanceof TmfXmlPatternSegment) {
                 List<String> values = ((TmfXmlPatternSegment) segment).getContent().entrySet().stream().map(c -> c.getKey() + '=' + c.getValue()).collect(Collectors.toList());
+                return String.join(", ", values); //$NON-NLS-1$
+            } else if (segment instanceof TmfXmlPatternCompositeSegment) {
+                List<String> values = ((TmfXmlPatternCompositeSegment) segment).getContent().entrySet().stream().map(c -> c.getKey() + '=' + c.getValue()).collect(Collectors.toList());
                 return String.join(", ", values); //$NON-NLS-1$
             }
             return EMPTY_STRING;

@@ -202,5 +202,4 @@ public class SystemCallLatencyAnalysis extends AbstractSegmentStoreAnalysisEvent
             return EMPTY_STRING;
         }
     }
-
 }
