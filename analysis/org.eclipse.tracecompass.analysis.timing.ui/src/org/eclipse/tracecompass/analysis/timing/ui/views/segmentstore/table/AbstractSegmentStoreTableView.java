@@ -22,6 +22,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IToolBarManager;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
@@ -32,6 +33,7 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.ISegmentStoreProvider;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
+import org.eclipse.tracecompass.internal.analysis.timing.ui.Activator;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.filter.dialog.LatencyViewFilterDialog;
 import org.eclipse.tracecompass.internal.analysis.timing.ui.views.segmentstore.ExportToTsvAction;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
@@ -114,6 +116,11 @@ public abstract class AbstractSegmentStoreTableView extends TmfView {
                 @Override
                 public void run() {
                     showFilterDialog();
+                }
+                @Override
+                public ImageDescriptor getImageDescriptor() {
+                    // TODO Auto-generated method stub
+                    return NonNullUtils.checkNotNull(Activator.getDefault().getImageDescripterFromPath("/icons/elcl16/filters_view.gif")); //$NON-NLS-1$
                 }
             };
         }
