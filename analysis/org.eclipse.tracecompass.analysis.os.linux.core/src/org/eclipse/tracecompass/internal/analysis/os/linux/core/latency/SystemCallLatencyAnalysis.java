@@ -32,6 +32,7 @@ import org.eclipse.tracecompass.analysis.os.linux.core.trace.IKernelTrace;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.AbstractSegmentStoreAnalysisEventBasedModule;
 import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
+import org.eclipse.tracecompass.segmentstore.core.SegmentComparators;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.core.segment.ISegmentAspect;
@@ -224,7 +225,7 @@ public class SystemCallLatencyAnalysis extends AbstractSegmentStoreAnalysisEvent
 
         @Override
         public @Nullable Comparator<?> getComparator() {
-            return null;
+            return SegmentComparators.INTERVAL_START_COMPARATOR;
         }
 
         @Override
@@ -251,7 +252,7 @@ public class SystemCallLatencyAnalysis extends AbstractSegmentStoreAnalysisEvent
 
         @Override
         public @Nullable Comparator<?> getComparator() {
-            return null;
+            return SegmentComparators.INTERVAL_END_COMPARATOR;
         }
 
         @Override
@@ -279,7 +280,7 @@ public class SystemCallLatencyAnalysis extends AbstractSegmentStoreAnalysisEvent
 
         @Override
         public @Nullable Comparator<?> getComparator() {
-            return null;
+            return SegmentComparators.INTERVAL_LENGTH_COMPARATOR;
         }
 
         @Override

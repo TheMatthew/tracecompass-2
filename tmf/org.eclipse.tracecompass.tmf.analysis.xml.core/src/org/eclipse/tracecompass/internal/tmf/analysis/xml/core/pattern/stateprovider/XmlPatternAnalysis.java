@@ -34,6 +34,7 @@ import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.segment.TmfXmlPat
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.stateprovider.TmfXmlStrings;
 import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
+import org.eclipse.tracecompass.segmentstore.core.SegmentComparators;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
 import org.eclipse.tracecompass.tmf.core.analysis.TmfAbstractAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.exceptions.TmfAnalysisException;
@@ -70,7 +71,7 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
     private XmlPatternSegmentStoreModule fSegmentStoreModule;
     private boolean fInitializationSucceeded;
     private static final Format FORMATTER = new SubSecondTimeWithUnitFormat();
-    private static final Format DECIMAL_FORMAT = new DecimalFormat("#.###"); //$NON-NLS-1$
+    private static final Format DECIMAL_FORMAT = new DecimalFormat("###,###.##"); //$NON-NLS-1$
 
     /**
      * Constructor
@@ -410,7 +411,7 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
 
         @Override
         public @Nullable Comparator<?> getComparator() {
-            return null;
+            return SegmentComparators.INTERVAL_START_COMPARATOR;
         }
 
         @Override
@@ -437,7 +438,7 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
 
         @Override
         public @Nullable Comparator<?> getComparator() {
-            return null;
+            return SegmentComparators.INTERVAL_END_COMPARATOR;
         }
 
         @Override
@@ -464,7 +465,7 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
 
         @Override
         public @Nullable Comparator<?> getComparator() {
-            return null;
+            return SegmentComparators.INTERVAL_LENGTH_COMPARATOR;
         }
 
         @Override
