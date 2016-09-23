@@ -10,6 +10,7 @@
 package org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import org.eclipse.tracecompass.analysis.os.linux.core.kernel.KernelThreadInform
 import org.eclipse.tracecompass.analysis.os.linux.core.signals.TmfCpuSelectedSignal;
 import org.eclipse.tracecompass.analysis.os.linux.core.signals.TmfThreadSelectedSignal;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.ISegmentStoreProvider;
+import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.internal.analysis.os.linux.core.kernel.Attributes;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.Messages;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.actions.FollowCpuAction;
@@ -547,7 +549,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         ret.addAll(segmentStore.stream()
                 .filter(segment->segment instanceof TmfXmlPatternSegment)
                 .<TmfXmlPatternSegment>filter(segment-> Objects.equals(((TmfXmlPatternSegment)segment).getContent().get("thread"),(threadFollowed)))
-                .map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), "Contention ", CONTENTION_COLOR, "Contention ", false))
+                .map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), "thread", CONTENTION_COLOR, NonNullUtils.nullToEmptyString(threadFollowed), false))
                 .collect(Collectors.toList()));
         return ret;
     }
@@ -566,12 +568,9 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
     protected @Nullable IAnalysisModule getFutexModule(ITmfTrace trace) {
         return trace.getAnalysisModule("futex analysis lttng"); //$NON-NLS-1$
     }
-@Override
-protected @NonNull List<String> getViewMarkerCategories() {
-    final @NonNull List<String> viewMarkerCategories = super.getViewMarkerCategories();
-    List<String> list = new ArrayList<>();
-    list.addAll(viewMarkerCategories);
-    list.add("thread " + getThreadFollowed());
-    return list;
-}
+
+    @Override
+    protected @NonNull List<String> getViewMarkerCategories() {
+        return Arrays.asList("thread");
+    }
 }
