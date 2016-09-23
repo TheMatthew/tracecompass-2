@@ -109,7 +109,7 @@ public class TmfXmlPatternSegmentBuilder {
         Map<String, ITmfStateValue> fields = new HashMap<>();
         setPatternSegmentContent(event, fields, scenarioInfo);
         ISegment segment;
-        if (fContainer instanceof XmlPatternStateProvider && scenarioInfo != null && ((XmlPatternStateProvider) fContainer).getChainId().equals(scenarioInfo.getFsmId())) {
+        if (fContainer instanceof XmlPatternStateProvider && scenarioInfo != null && scenarioInfo.getFsmId().equals(((XmlPatternStateProvider) fContainer).getChainId())) {
             List<ISegment> subSegments = buildSubSegments(start.getValue(), end.getValue(), scenarioInfo);
             segment = new TmfXmlPatternCompositeSegment(startValue, endValue, scale, segmentName, fields, subSegments);
         } else {

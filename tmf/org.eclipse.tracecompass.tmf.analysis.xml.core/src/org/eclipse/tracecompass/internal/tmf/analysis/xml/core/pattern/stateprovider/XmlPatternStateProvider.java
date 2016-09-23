@@ -8,6 +8,7 @@
  ******************************************************************************/
 package org.eclipse.tracecompass.internal.tmf.analysis.xml.core.pattern.stateprovider;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -287,8 +288,12 @@ public class XmlPatternStateProvider extends AbstractTmfStateProvider implements
      *
      * @return The chain id
      */
+    @Nullable
     public String getChainId() {
-        return NonNullUtils.checkNotNull(fChain).getId();
+        if (fChain != null) {
+            return fChain.getId();
+        }
+        return null;
     }
 
     /**
@@ -297,6 +302,10 @@ public class XmlPatternStateProvider extends AbstractTmfStateProvider implements
      * @return The chain states
      */
     public List<String> getChainStates() {
-        return NonNullUtils.checkNotNull(fChain).getStates();
+        FsmChain chain = fChain;
+        if (chain == null) {
+            return new ArrayList<>();
+        }
+        return chain.getStates();
     }
 }
