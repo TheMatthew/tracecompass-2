@@ -47,7 +47,7 @@ TRYLOCK_PI	136	264
 <!-- Timegraph view for uaddr x TID-->
   <timeGraphView id="org.eclipse.linuxtools.tmf.analysis.xml.core.wait.timegraph">
     <head>
-	<analysis id="futex analysis lttng2.4" />
+	<analysis id="futex analysis lttng" />
 	<label value="uaddr vs tid" />
     </head>
     <definedValue name="WAIT" value="1" color="#646464" />
@@ -63,7 +63,7 @@ TRYLOCK_PI	136	264
 <!--Timegraph view that show the scenario execution state in time  -->
     <timeGraphView id="xml.scenarios">
         <head>
-            <analysis id="futex analysis lttng2.4" />
+            <analysis id="futex analysis lttng" />
             <label value="scenario" />
         </head>
 <!--  FFA040 -->
@@ -83,7 +83,7 @@ TRYLOCK_PI	136	264
         </entry>
     </timeGraphView>
 
-<pattern version="0" id="futex analysis lttng2.4">
+<pattern version="0" id="futex analysis lttng">
 	<head>
 		<traceType id="org.eclipse.linuxtools.lttng2.kernel.tracetype" />
 		<label value="XML Futex Contention Analysis 2.4" />

@@ -542,7 +542,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
     }
 
     protected @Nullable IAnalysisModule getFutexModule(ITmfTrace trace) {
-        return trace.getAnalysisModule("FUTEX ID"); //$NON-NLS-1$
+        return trace.getAnalysisModule("futex analysis lttng"); //$NON-NLS-1$
     }
 
     private static String getMarkerTitle(ISegmentAspect aspect, @NonNull ISegment segment) {
