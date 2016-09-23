@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tmfxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="xmlDefinition.xsd">
+ 
+<timeGraphView
+id="org.eclipse.linuxtools.tmf.analysis.xml.core.periodic.timegraph">
+    <head>
+    <analysis id="my.kernel.irq.1.0.filter.provider" />
+    <label value="irq cyclic view" />
+    </head>
+    <definedValue name="A" value="1" color="#646464" />
+    <definedValue name="B" value="2" color="#c8c8c8" />
+    
+    <entry path="periods/irq/*">
+    <display type="self"/>
+    <name type="self"/>
+    </entry>
+    <entry path="periods/softirq/*">
+    <display type="self"/>
+    <name type="self"/>
+    </entry>
+</timeGraphView>
+    
+<pattern version="0" id="my.kernel.irq.1.0.filter.provider">
+    <head>
+        <traceType id="org.eclipse.linuxtools.lttng2.kernel.tracetype" />
+        <label value="My kernel irq XML 1.0 Filter" />
+    </head>
+    
+    <storedField id="ret" alias="ret"/>
+        <location id="CurrentCPU">
+            <stateAttribute type="constant" value="CPUs" />
+            <stateAttribute type="eventField" value="cpu" />
+        </location>
+        <mappingGroup id="softirq_label">
+		<entry>
+			<stateValue type="long" value="0" />
+			<stateValue type="string" value="High priority tasklet" />
+		</entry>
+		<entry>
+			<stateValue type="long" value="1" />
+			<stateValue type="string" value="Timer" />
+		</entry>
+		<entry>
+			<stateValue type="long" value="2" />
+			<stateValue type="string" value="Network TX" />
+		</entry>
+		<entry>
+			<stateValue type="long" value="3" />
+			<stateValue type="string" value="Network RX" />
+		</entry>
+		<entry>
+			<stateValue type="long" value="4" />
+			<stateValue type="string" value="Block device" />
+		</entry>
+		<entry>
+			<stateValue type="long" value="5" />
+			<stateValue type="string" value="Block device IO Poll" />
+		</entry>
+		<entry>
+			<stateValue type="long" value="6" />
+			<stateValue type="string" value="Tasklet" />
+		</entry>
+		<entry>
+			<stateValue type="long" value="7" />
+			<stateValue type="string" value="Scheduler" />
+		</entry>
+		<entry>
+			<stateValue type="long" value="8" />
+			<stateValue type="string" value="High res timer" />
+		</entry>
+		<entry>
+			<stateValue type="long" value="9" />
+			<stateValue type="string" value="RCU data" />
+		</entry>
+	</mappingGroup>
+    <patternHandler>
+<!--         MATCHING INPUTS -->
+        <test id="cpu_cpu">
+                <if>
+                    <condition>
+                        <stateValue type="query">
+                            <stateAttribute type="constant" value="#CurrentScenario" />
+                            <stateAttribute type="constant" value="cpu" />
+                        </stateValue>
+                        <stateValue type="eventField" value="cpu" />
+                    </condition>
+                </if>
+            
+        </test>
+        <test id="vec_vec">
+                <if>
+                    <condition>
+                        <stateValue type="query">
+                            <stateAttribute type="constant" value="#CurrentScenario" />
+                            <stateAttribute type="constant" value="vec" />
+                        </stateValue>
+                        <stateValue type="eventField" value="vec" />
+                    </condition>
+                </if>
+            
+        </test>
+<!--          IRQ FSM ACTIONS-->
+        <action id="softirq_raise">
+            <stateChange>
+		<stateAttribute type="constant" value="#CurrentScenario" />
+                <stateAttribute type="constant" value="cpu" />
+                <stateValue type="eventField" value="cpu" />
+            </stateChange>
+            <stateChange>
+		<stateAttribute type="constant" value="#CurrentScenario" />
+                <stateAttribute type="constant" value="vec" />
+                <stateValue type="eventField" value="vec" />
+            </stateChange>
+        </action>
+        <action id="softirq_exit">
+            <segment>
+                <segType>
+                    <segName>
+                        <stateValue type="query" mappingGroup="softirq_label">
+				<stateAttribute type="constant" value="#CurrentScenario" />
+				<stateAttribute type="constant" value="vec" />
+                        </stateValue>
+                    </segName>
+                </segType>
+                <segContent>
+                    <segField name="cpu" type="long">
+                        <stateValue type="eventField" value="cpu" />
+                    </segField>
+                    <segField name="vec" type="long">
+                        <stateValue type="query">
+			    <stateAttribute type="constant" value="#CurrentScenario" />
+                            <stateAttribute type="constant" value="vec" />
+                        </stateValue>
+                    </segField>
+                </segContent>
+            </segment>
+        </action>	
+        <fsm id="softirq" initial="raise" followChain="true" >
+            <precondition event="softirq_*" />
+	    <state id="raise">
+                  <transition event="softirq_raise" target="entry" action="softirq_raise" />
+	    </state>
+            <state id="entry">
+                  <transition event="softirq_entry" cond="cpu_cpu:vec_vec" target="exit"/>
+	    </state>
+	    <state id="exit">
+                    <transition event="softirq_exit" cond="cpu_cpu:vec_vec" target="irq" action="softirq_exit" />
+	    </state>
+            <final id="irq" />
+        </fsm>
+    </patternHandler>
+</pattern>
+</tmfxml>
+
