@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tmfxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="xmlDefinition.xsd">
+  <!-- /******************************************************************************* 
+        * Copyright (c) 2016 Ericsson                                                   
+        *                                                                               
+        * All rights reserved. This program and the accompanying materials are          
+        * made available under the terms of the Eclipse Public License v1.0 which       
+        * accompanies this distribution, and is available at                            
+        * http://www.eclipse.org/legal/epl-v10.html                                     
+        ******************************************************************************/  -->
+  <pattern version="0" id="cyclic-test ust anaylysis">
+    <head>
+      <traceType id="org.eclipse.linuxtools.lttng2.ust.tracetype" />
+      <label value="Cyclic test" />
+    </head>
+
+    <patternHandler>
+
+      <test id="cond_same_data">
+        <if>
+          <and>
+            <condition>
+              <stateAttribute type="constant" value="#CurrentScenario" />
+              <stateAttribute type="constant" value="tid" />
+              <stateValue type="eventField" value="context_vtid" />
+            </condition>
+            <condition>
+              <stateAttribute type="constant" value="#CurrentScenario" />
+              <stateAttribute type="constant" value="cpu" />
+              <stateValue type="eventField" value="cpu" />
+            </condition>
+          </and>
+        </if>
+      </test>
+
+      <action id="action_set_data">
+        <stateChange>
+          <stateAttribute type="constant" value="#CurrentScenario" />
+          <stateAttribute type="constant" value="tid" />
+          <stateValue type="eventField" value="context_vtid" />
+        </stateChange>
+        <stateChange>
+          <stateAttribute type="constant" value="#CurrentScenario" />
+          <stateAttribute type="constant" value="cpu" />
+          <stateValue type="eventField" value="cpu" />
+        </stateChange>
+      </action>
+
+      <action id="cyclic_endeded"> 
+        <segment>
+          <segType segName="cyclic" />
+          <segContent>
+            <segField name="CPU" type="long">
+              <stateValue type="eventField" value="cpu" />
+            </segField>
+            <segField name="ID" type="long">
+              <stateValue type="eventField" value="id" />
+            </segField>
+            <segField name="TID" type="long">
+              <stateValue type="eventField" value="context._vtid" />
+            </segField>
+          </segContent>
+        </segment>
+      </action>
+
+      <fsm id="CYCLIC_times">
+        <precondition event="cyclictest:run" />
+        <precondition event="cyclictest:wait" />
+        <state id="init">
+          <transition event="cyclictest:wait" target="begin" action="action_set_data" />
+        </state>
+        <state id="begin">
+          <transition event="cyclictest:run" target="end" cond="cond_same_data"
+            action="cyclic_endeded" />
+        </state>
+        <final id="end" />
+      </fsm>
+
+    </patternHandler>
+  </pattern>
+</tmfxml>
