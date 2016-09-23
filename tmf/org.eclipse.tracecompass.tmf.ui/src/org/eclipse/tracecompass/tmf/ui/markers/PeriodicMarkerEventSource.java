@@ -66,7 +66,7 @@ public class PeriodicMarkerEventSource implements IMarkerEventSource {
          *            the reference marker time in time units
          * @param index
          *            the reference marker index
-         * @since 2.1
+         * @since 2.2
          */
         public Reference(long time, long index) {
             this.time = time;
@@ -164,7 +164,7 @@ public class PeriodicMarkerEventSource implements IMarkerEventSource {
      *            the marker color array
      * @param foreground
      *            true if the marker is drawn in foreground, and false otherwise
-     * @since 2.1
+     * @since 2.2
      */
     public PeriodicMarkerEventSource(String category, Reference reference, double period, long rollover, int[] weights, @Nullable RGBA[] colors, boolean foreground) {
         this(category, reference, period, rollover, foreground, weights, colors);
@@ -278,7 +278,7 @@ public class PeriodicMarkerEventSource implements IMarkerEventSource {
      * @param time
      *            the marker time
      * @return the marker index
-     * @since 2.1
+     * @since 2.2
      */
     public long getMarkerIndex(long time) {
         long index = Math.round((time - fReference.time) / fPeriod) + fReference.index;
@@ -317,7 +317,7 @@ public class PeriodicMarkerEventSource implements IMarkerEventSource {
      * @param time
      *            the marker time
      * @return true if the marker is applicable
-     * @since 2.1
+     * @since 2.2
      */
     public boolean isApplicable(long time) {
         return true;
