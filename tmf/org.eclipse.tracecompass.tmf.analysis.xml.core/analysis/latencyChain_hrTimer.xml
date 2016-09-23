@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tmfxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="xmlDefinition.xsd">
+
+  <!--Timegraph view that show the scenario execution state in time  -->
+    <timeGraphView id="xml.scenarios">
+        <head>
+            <analysis id="hr_timer_chain" />
+            <label value="scenario" />
+        </head>
+<!--  FFA040 -->
+        <definedValue name="PENDING" value="0" color="#CCCCCC"/>
+        <definedValue name="IN_PROGRESS" value="1" color="#00CCFF"/>
+        <definedValue name="MATCHED" value="2" color="#118811"/>
+        <definedValue name="ABANDONED" value="3" color="#EE0000"/>
+
+        <!-- Scenario view -->
+        <entry path="scenarios/*">
+            <display type="self" />
+	    <name type="self" />
+            <entry path="*">
+                <display type="constant" value="state" />
+                <name type="self" />
+	    </entry>
+        </entry>
+    </timeGraphView>
+    
+<pattern version="0" id="hr_timer_chain">
+	<head>
+		<traceType id="org.eclipse.linuxtools.lttng2.kernel.tracetype" />
+		<label value="XML hr_timer chain" />
+	</head>
+	
+	<location id="CurrentThread">
+		<stateAttribute type="location" value="CurrentCPU" />
+		<stateAttribute type="constant" value="Current_thread" />
+        </location>
+        <location id="CurrentCPU">
+		<stateAttribute type="constant" value="CPUs" />
+		<stateAttribute type="eventField" value="cpu" />
+        </location>
+	<patternHandler>		
+		<test id="isTidValid">
+			<if>
+				<condition>
+					<stateAttribute type="location" value="CurrentCPU" />
+					<stateAttribute type="constant" value="Current_thread" />
+					<stateValue type="long" value="18395" />
+				</condition>
+			</if>
+		</test>
+		<test id="IsfunctionValid">
+			<if>
+				<condition>
+					<field name="function" />
+					<stateValue type="long" value="-2130122992" />
+				</condition>
+			</if>
+		</test>
+		<test id="test_hrtimer">
+			<if>
+				<condition>
+					<stateAttribute type="constant" value="#CurrentScenario" />
+					<stateAttribute type="constant" value="hrtimer" />
+					<stateValue type="eventField" value="hrtimer"/>
+				</condition>
+			</if>
+		</test>
+		<test id="test_comm">
+			<if>
+				<condition>
+					<field name="comm" />
+					<stateValue type="string" value="cyclictest" />
+				</condition>
+			</if>
+		</test>
+		<test id="test_next_comm">
+			<if>
+				<condition>
+					<field name="next_comm" />
+					<stateValue type="string" value="cyclictest" />
+				</condition>
+			</if>
+		</test>
+		<test id="test_cpu">
+			<if>
+				<condition>
+					<stateAttribute type="constant" value="#CurrentScenario" />
+					<stateAttribute type="constant" value="cpu" />
+					<stateValue type="eventField" value="cpu"/>
+				</condition>
+			</if>
+		</test>
+		<action id="save_start_context">
+			<stateChange>	
+				<stateAttribute type="constant" value="#CurrentScenario" />
+				<stateAttribute type="constant" value="hrtimer" />
+				<stateValue type="eventField" value="hrtimer"/>
+			</stateChange>
+			<stateChange>	
+				<stateAttribute type="constant" value="#CurrentScenario" />
+				<stateAttribute type="constant" value="expires" />
+				<stateValue type="eventField" value="expires"/>
+			</stateChange>
+		</action>
+		<action id="save_expire_context">
+			<stateChange>	
+				<stateAttribute type="constant" value="#CurrentScenario" />
+				<stateAttribute type="constant" value="now" />
+				<stateValue type="eventField" value="now"/>
+			</stateChange>
+			<stateChange>	
+				<stateAttribute type="constant" value="#CurrentScenario" />
+				<stateAttribute type="constant" value="cpu" />
+				<stateValue type="eventField" value="cpu"/>
+			</stateChange>
+		</action>
+		<action id="save_sched_switch_context">
+			<stateChange>	
+				<stateAttribute type="constant" value="#CurrentScenario" />
+				<stateAttribute type="constant" value="comm" />
+				<stateValue type="eventField" value="next_comm"/>
+			</stateChange>
+		</action>
+		<action id="update Current_thread">
+			<stateChange>
+				<stateAttribute type="location" value="CurrentCPU" />
+				<stateAttribute type="constant" value="Current_thread" />
+				<stateValue type="eventField" value="next_tid" />
+			</stateChange>
+		</action>
+		<action id="hr_timer_segment">
+			<segment>
+				<segType>
+					<segName>
+						<stateValue type="query">
+							<stateAttribute type="constant" value="#CurrentScenario" />
+							<stateAttribute type="constant" value="comm" />
+						</stateValue>
+					</segName>
+				</segType>
+				<segContent>
+					<segField name="hrtimer" type="long">
+						<stateValue type="query">
+							<stateAttribute type="constant" value="#CurrentScenario" />
+							<stateAttribute type="constant" value="hrtimer" />
+						</stateValue>
+					</segField>
+					<segField name="expires" type="long">
+						<stateValue type="query">
+							<stateAttribute type="constant" value="#CurrentScenario" />
+							<stateAttribute type="constant" value="expires" />
+						</stateValue>
+					</segField>
+					<segField name="now" type="long">
+						<stateValue type="query">
+							<stateAttribute type="constant" value="#CurrentScenario" />
+							<stateAttribute type="constant" value="now" />
+						</stateValue>
+					</segField>
+				</segContent>
+			</segment>
+		</action>
+		<fsm id="sched_switch" multiple="false">
+			<precondition event="sched_switch" />
+			<state id="sched_switch">
+<!-- 					The state will stay here forever and execute the action "update current thread" each time a sched_switch event will be meet-->
+				<transition target="sched_switch" action="update Current_thread" />
+			</state>
+		</fsm>
+		<fsm id="hrTimer" followChain="true" >
+			<precondition event="timer_hrtimer_expire_entry" />
+			<precondition event="sched_wakeup|sched_wakeup_new" />
+			<precondition event="sched_switch" />
+			<precondition event="syscall_exit_clock_nanosleep" />
+			<initialState>
+				<transition event="timer_hrtimer_start" cond="isTidValid:IsfunctionValid" target="expire_entry" action="save_start_context"/>
+			</initialState>
+			<state id="expire_entry" >
+				<transition event="timer_hrtimer_expire_entry" cond="IsfunctionValid:test_hrtimer" target="sched_wakeup" action="save_expire_context"/>
+			</state>
+			<state id="sched_wakeup" >
+				<transition event="sched_wakeup|sched_wakeup_new" cond="test_comm:test_cpu" target="sched_switch"/>
+			</state>
+			<state id="sched_switch" >
+				<transition event="sched_switch" cond="test_next_comm" target="exit_clock_nanosleep" action="save_sched_switch_context"/>
+			</state>
+			<state id="exit_clock_nanosleep" >
+				<transition event="syscall_exit_clock_nanosleep" cond="isTidValid" target="end" action="hr_timer_segment"/>
+			</state>
+			<final id="end"/>
+		</fsm>
+	</patternHandler>
+</pattern>
+</tmfxml>
