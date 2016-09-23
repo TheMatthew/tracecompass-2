@@ -376,7 +376,7 @@ TRYLOCK_PI	136	264
 					</segName>
 				</segType>
 				<segContent>
-					<segField name="owner" type="long">
+					<segField name="thread" type="long">
 						<stateValue type="query">
 							<stateAttribute type="constant" value="#CurrentScenario" />
 							<stateAttribute type="constant" value="owner" />

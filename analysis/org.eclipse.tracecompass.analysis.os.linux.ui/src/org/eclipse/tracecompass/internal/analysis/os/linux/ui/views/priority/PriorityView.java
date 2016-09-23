@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -39,12 +40,15 @@ import org.eclipse.tracecompass.internal.analysis.os.linux.ui.actions.FollowThre
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.actions.UnfollowCpuAction;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityViewEntry.AggregatePriorityEntry;
 import org.eclipse.tracecompass.internal.analysis.os.linux.ui.views.priority.PriorityViewEntry.Type;
+import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.segment.TmfXmlPatternSegment;
 import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
 import org.eclipse.tracecompass.statesystem.core.exceptions.AttributeNotFoundException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedException;
 import org.eclipse.tracecompass.statesystem.core.interval.ITmfStateInterval;
+import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
+import org.eclipse.tracecompass.statesystem.core.statevalue.TmfStateValue;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.segment.ISegmentAspect;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSignalHandler;
@@ -87,6 +91,8 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
     private static final long BUILD_UPDATE_TIMEOUT = 500;
 
     private static final RGBA CONTENTION_COLOR = new RGBA(200, 100, 30, 70);
+
+    private @Nullable ITmfStateValue fThreadValue;
 
     // ------------------------------------------------------------------------
     // Constructors
@@ -519,6 +525,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         int data = signal.getThreadId() >= 0 ? signal.getThreadId() : -1;
         TmfTraceContext ctx = TmfTraceManager.getInstance().getCurrentTraceContext();
         ctx.setData(RESOURCES_FOLLOW_THREAD, data);
+        startZoomThread(getTimeGraphViewer().getTime0(), getTimeGraphViewer().getTime1());
     }
 
     @Override
@@ -536,17 +543,35 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         if (aspect == null || segmentStore == null) {
             return ret;
         }
-        ret.addAll(segmentStore.stream().map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), getMarkerTitle(aspect, segment), CONTENTION_COLOR, getMarkerTitle(aspect, segment), false))
+        @Nullable ITmfStateValue threadFollowed = getThreadFollowed();
+        ret.addAll(segmentStore.stream()
+                .filter(segment->segment instanceof TmfXmlPatternSegment)
+                .<TmfXmlPatternSegment>filter(segment-> Objects.equals(((TmfXmlPatternSegment)segment).getContent().get("thread"),(threadFollowed)))
+                .map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), "Contention ", CONTENTION_COLOR, "Contention ", false))
                 .collect(Collectors.toList()));
         return ret;
+    }
+
+    private @Nullable ITmfStateValue getThreadFollowed() {
+        TmfTraceContext ctx = TmfTraceManager.getInstance().getCurrentTraceContext();
+        @Nullable Object data = ctx.getData(RESOURCES_FOLLOW_THREAD);
+        if (data instanceof Integer) {
+            fThreadValue = TmfStateValue.newValueLong(((Integer) data).longValue());
+        } else if (data instanceof Long) {
+            fThreadValue = TmfStateValue.newValueLong(((Long) data).longValue());
+        }
+        return fThreadValue;
     }
 
     protected @Nullable IAnalysisModule getFutexModule(ITmfTrace trace) {
         return trace.getAnalysisModule("futex analysis lttng"); //$NON-NLS-1$
     }
-
-    private static String getMarkerTitle(ISegmentAspect aspect, @NonNull ISegment segment) {
-        return "Contention " + String.valueOf(aspect.resolve(segment)); //$NON-NLS-1$
-    }
-
+@Override
+protected @NonNull List<String> getViewMarkerCategories() {
+    final @NonNull List<String> viewMarkerCategories = super.getViewMarkerCategories();
+    List<String> list = new ArrayList<>();
+    list.addAll(viewMarkerCategories);
+    list.add("thread " + getThreadFollowed());
+    return list;
+}
 }
