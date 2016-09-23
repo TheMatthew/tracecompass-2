@@ -62,7 +62,7 @@ public class FilterTreeContentProvider implements ITreeContentProvider {
 
     @Override
     public Object getParent(@Nullable Object element) {
-        return NonNullUtils.checkNotNull(((ITmfFilterTreeNode) NonNullUtils.checkNotNull(element)).getParent());
+        return ((ITmfFilterTreeNode) NonNullUtils.checkNotNull(element)).getParent();
     }
 
     @Override
