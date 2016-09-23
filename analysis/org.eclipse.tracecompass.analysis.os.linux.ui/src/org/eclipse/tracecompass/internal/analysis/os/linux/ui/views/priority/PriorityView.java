@@ -450,7 +450,15 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
             long duration = statusInterval.getEndTime() - time + 1;
             if (!statusInterval.getStateValue().isNull() && fullState.get(currentThreadQuark).getStateValue().unboxInt() == threadId) {
                 if (lastEndTime != time && lastEndTime != -1) {
-                    eventList.add(new TimeEvent(entry, lastEndTime, time - lastEndTime));
+                    long duration2 = time - lastEndTime;
+                    if (duration2 < 0) {
+                        // FIXME this is a hack
+                        // TODO fix me
+                        // XXX hack
+                        // HACK hack
+                        continue;
+                    }
+                    eventList.add(new TimeEvent(entry, lastEndTime, duration2));
                 }
                 ITmfStateInterval cpuStatusInterval = fullState.get(cpuStatusQuark);
                 int status = cpuStatusInterval.getStateValue().unboxInt();
