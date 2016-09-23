@@ -4,6 +4,8 @@ import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.text.DecimalFormat;
+import java.text.Format;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,15 +21,19 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.AbstractSegmentStoreAnalysisEventBasedModule;
 import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
+import org.eclipse.tracecompass.segmentstore.core.SegmentComparators;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.core.segment.ISegmentAspect;
 import org.eclipse.tracecompass.tmf.core.timestamp.ITmfTimestamp;
+import org.eclipse.tracecompass.tmf.core.timestamp.TmfTimestampFormat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 public class InAndOutAnalysis extends AbstractSegmentStoreAnalysisEventBasedModule {
 
     private static final Map<String, IInAndOutHandler> HANDLERS = new HashMap<>();
+    private static final Format DECIMAL_FORMAT = new DecimalFormat("###,###.##"); //$NON-NLS-1$
 
     static {
         HANDLERS.put("i2c_write", (ITmfEvent event, Map<String, ITmfTimestamp> currentStack, Collection<@NonNull ISegment> store, Collection<@NonNull ISegment> markers) -> currentStack.put("I2C_WRITE", event.getTimestamp())); //$NON-NLS-1$ //$NON-NLS-2$
@@ -62,6 +68,7 @@ public class InAndOutAnalysis extends AbstractSegmentStoreAnalysisEventBasedModu
     public @NonNull Iterable<@NonNull ISegmentAspect> getSegmentAspects() {
         List<@NonNull ISegmentAspect> aspects = new ArrayList<>();
         Iterables.addAll(aspects, super.getSegmentAspects());
+        aspects.addAll(ImmutableList.of(StartAspect.INSTANCE, EndAspect.INSTANCE, DurationAspect.INSTANCE));
         aspects.add(new ISegmentAspect() {
 
             @Override
@@ -158,4 +165,84 @@ public class InAndOutAnalysis extends AbstractSegmentStoreAnalysisEventBasedModu
         return fExposedMarker;
     }
 
+    private static final class StartAspect implements ISegmentAspect {
+        public static final @NonNull ISegmentAspect INSTANCE = new StartAspect();
+
+        private StartAspect() {
+        }
+
+        @Override
+        public String getHelpText() {
+            return checkNotNull("Start Time"); //$NON-NLS-1$
+        }
+
+        @Override
+        public String getName() {
+            return checkNotNull("Start Time"); //$NON-NLS-1$
+        }
+
+        @Override
+        public @Nullable Comparator<?> getComparator() {
+            return SegmentComparators.INTERVAL_START_COMPARATOR;
+        }
+
+        @Override
+        public @Nullable String resolve(ISegment segment) {
+            return TmfTimestampFormat.getDefaulTimeFormat().format(segment.getStart());
+        }
+    }
+
+    private static final class EndAspect implements ISegmentAspect {
+        public static final @NonNull ISegmentAspect INSTANCE = new EndAspect();
+
+        private EndAspect() {
+        }
+
+        @Override
+        public String getHelpText() {
+            return checkNotNull("End Time"); //$NON-NLS-1$
+        }
+
+        @Override
+        public String getName() {
+            return checkNotNull("End Time"); //$NON-NLS-1$
+        }
+
+        @Override
+        public @Nullable Comparator<?> getComparator() {
+            return SegmentComparators.INTERVAL_END_COMPARATOR;
+        }
+
+        @Override
+        public @Nullable String resolve(ISegment segment) {
+            return TmfTimestampFormat.getDefaulTimeFormat().format(segment.getEnd());
+        }
+    }
+
+    private static final class DurationAspect implements ISegmentAspect {
+        public static final @NonNull ISegmentAspect INSTANCE = new DurationAspect();
+
+        private DurationAspect() {
+        }
+
+        @Override
+        public String getHelpText() {
+            return checkNotNull("Duration"); //$NON-NLS-1$
+        }
+
+        @Override
+        public String getName() {
+            return checkNotNull("Duration"); //$NON-NLS-1$
+        }
+
+        @Override
+        public @Nullable Comparator<?> getComparator() {
+            return SegmentComparators.INTERVAL_LENGTH_COMPARATOR;
+        }
+
+        @Override
+        public @Nullable String resolve(ISegment segment) {
+            return DECIMAL_FORMAT.format(segment.getLength());
+        }
+    }
 }

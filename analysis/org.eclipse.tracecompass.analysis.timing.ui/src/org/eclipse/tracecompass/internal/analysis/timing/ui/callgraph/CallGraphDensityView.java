@@ -13,7 +13,6 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Table;
 import org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.density.AbstractSegmentStoreDensityView;
 import org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.density.AbstractSegmentStoreDensityViewer;
 import org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.table.AbstractSegmentStoreTableViewer;
@@ -38,14 +37,7 @@ public class CallGraphDensityView extends AbstractSegmentStoreDensityView {
 
     @Override
     protected AbstractSegmentStoreTableViewer createSegmentStoreTableViewer(Composite parent) {
-        return new CallGraphTableViewer(new TableViewer(parent, SWT.FULL_SELECTION | SWT.VIRTUAL)) {
-            @Override
-            protected void createProviderColumns() {
-                super.createProviderColumns();
-                Table t = (Table) getControl();
-                t.setColumnOrder(new int[] { 2, 3, 0, 1 });
-            }
-        };
+        return new CallGraphTableViewer(new TableViewer(parent, SWT.FULL_SELECTION | SWT.VIRTUAL));
     }
 
     @Override
