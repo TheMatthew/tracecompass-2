@@ -27,20 +27,17 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.IAnalysisProgressListener;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.ISegmentStoreProvider;
 import org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.SubSecondTimeWithUnitFormat;
-import org.eclipse.tracecompass.internal.analysis.timing.ui.views.segmentstore.table.Messages;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.model.TmfXmlPatternSegmentBuilder;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.segment.TmfXmlPatternCompositeSegment;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.segment.TmfXmlPatternSegment;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.stateprovider.TmfXmlStrings;
 import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
-import org.eclipse.tracecompass.segmentstore.core.SegmentComparators;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
 import org.eclipse.tracecompass.tmf.core.analysis.TmfAbstractAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.exceptions.TmfAnalysisException;
 import org.eclipse.tracecompass.tmf.core.segment.ISegmentAspect;
 import org.eclipse.tracecompass.tmf.core.statesystem.ITmfAnalysisModuleWithStateSystems;
-import org.eclipse.tracecompass.tmf.core.timestamp.TmfTimestampFormat;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceManager;
 
@@ -268,7 +265,7 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
     private @NonNull
     static Iterable<ISegmentAspect> buildChainAspects(XmlPatternStateProvider provider, @NonNull ImmutableList<ISegmentAspect> immutableList) {
         @NonNull List<ISegmentAspect> aspects = new ArrayList<>();
-        aspects.addAll(BASED_TABLE_ASPECTS);
+        aspects.addAll(BASED_SEGMENT_ASPECTS);
         aspects.addAll(immutableList);
         final String prefix = "Time to "; //$NON-NLS-1$
         for (int i = 0; i < provider.getChainStates().size(); i++) {
@@ -338,11 +335,11 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
 
         @Override
         public String getHelpText() {
-            return checkNotNull("Name");
+            return checkNotNull("Name"); //$NON-NLS-1$
         }
         @Override
         public String getName() {
-            return checkNotNull("Name");
+            return checkNotNull("Name"); //$NON-NLS-1$
         }
         @Override
         public @Nullable Comparator<?> getComparator() {
@@ -368,11 +365,11 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
 
         @Override
         public String getHelpText() {
-            return checkNotNull("Content");
+            return checkNotNull("Content"); //$NON-NLS-1$
         }
         @Override
         public String getName() {
-            return checkNotNull("Content");
+            return checkNotNull("Content"); //$NON-NLS-1$
         }
         @Override
         public @Nullable Comparator<?> getComparator() {
@@ -388,89 +385,6 @@ public class XmlPatternAnalysis extends TmfAbstractAnalysisModule implements ITm
                 return String.join(", ", values); //$NON-NLS-1$
             }
             return EMPTY_STRING;
-        }
-    }
-
-    private static List<ISegmentAspect> BASED_TABLE_ASPECTS = ImmutableList.of(StartAspect.INSTANCE, EndAspect.INSTANCE,
-            DurationAspect.INSTANCE);
-    private static final class StartAspect implements ISegmentAspect {
-        public static final ISegmentAspect INSTANCE = new StartAspect();
-
-        private StartAspect() {
-        }
-
-        @Override
-        public String getHelpText() {
-            return checkNotNull(Messages.SegmentStoreTableViewer_startTime);
-        }
-
-        @Override
-        public String getName() {
-            return checkNotNull(Messages.SegmentStoreTableViewer_startTime);
-        }
-
-        @Override
-        public @Nullable Comparator<?> getComparator() {
-            return SegmentComparators.INTERVAL_START_COMPARATOR;
-        }
-
-        @Override
-        public @Nullable String resolve(ISegment segment) {
-            return TmfTimestampFormat.getDefaulTimeFormat().format(segment.getStart());
-        }
-    }
-
-    private static final class EndAspect implements ISegmentAspect {
-        public static final ISegmentAspect INSTANCE = new EndAspect();
-
-        private EndAspect() {
-        }
-
-        @Override
-        public String getHelpText() {
-            return checkNotNull(Messages.SegmentStoreTableViewer_endTime);
-        }
-
-        @Override
-        public String getName() {
-            return checkNotNull(Messages.SegmentStoreTableViewer_endTime);
-        }
-
-        @Override
-        public @Nullable Comparator<?> getComparator() {
-            return SegmentComparators.INTERVAL_END_COMPARATOR;
-        }
-
-        @Override
-        public @Nullable String resolve(ISegment segment) {
-            return TmfTimestampFormat.getDefaulTimeFormat().format(segment.getEnd());
-        }
-    }
-
-    private static final class DurationAspect implements ISegmentAspect {
-        public static final ISegmentAspect INSTANCE = new DurationAspect();
-
-        private DurationAspect() {
-        }
-
-        @Override
-        public String getHelpText() {
-            return checkNotNull(Messages.SegmentStoreTableViewer_duration);
-        }
-
-        @Override
-        public String getName() {
-            return checkNotNull(Messages.SegmentStoreTableViewer_duration);
-        }
-
-        @Override
-        public @Nullable Comparator<?> getComparator() {
-            return SegmentComparators.INTERVAL_LENGTH_COMPARATOR;
-        }
-
-        @Override
-        public @Nullable String resolve(ISegment segment) {
-            return DECIMAL_FORMAT.format(segment.getLength());
         }
     }
 }

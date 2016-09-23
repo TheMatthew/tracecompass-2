@@ -13,12 +13,11 @@ import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.text.DecimalFormat;
-import java.text.Format;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -32,14 +31,11 @@ import org.eclipse.tracecompass.analysis.os.linux.core.trace.IKernelTrace;
 import org.eclipse.tracecompass.analysis.timing.core.segmentstore.AbstractSegmentStoreAnalysisEventBasedModule;
 import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
-import org.eclipse.tracecompass.segmentstore.core.SegmentComparators;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.core.segment.ISegmentAspect;
-import org.eclipse.tracecompass.tmf.core.timestamp.TmfTimestampFormat;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -54,9 +50,6 @@ public class SystemCallLatencyAnalysis extends AbstractSegmentStoreAnalysisEvent
     public static final String ID = "org.eclipse.tracecompass.analysis.os.linux.latency.syscall"; //$NON-NLS-1$
 
     private static final String DATA_FILENAME = "latency-analysis.dat"; //$NON-NLS-1$
-
-    private static final Collection<ISegmentAspect> BASE_ASPECTS =
-            ImmutableList.of(StartAspect.INSTANCE, EndAspect.INSTANCE, DurationAspect.INSTANCE, SyscallNameAspect.INSTANCE);
 
     @Override
     public String getId() {
@@ -78,7 +71,10 @@ public class SystemCallLatencyAnalysis extends AbstractSegmentStoreAnalysisEvent
 
     @Override
     public Iterable<ISegmentAspect> getSegmentAspects() {
-        return BASE_ASPECTS;
+        List<ISegmentAspect> aspects = new ArrayList<>();
+        aspects.addAll(BASED_SEGMENT_ASPECTS);
+        aspects.add(SyscallNameAspect.INSTANCE);
+        return aspects;
     }
 
     @Override
@@ -204,88 +200,6 @@ public class SystemCallLatencyAnalysis extends AbstractSegmentStoreAnalysisEvent
                 return ((SystemCall) segment).getName();
             }
             return EMPTY_STRING;
-        }
-    }
-
-    private static final class StartAspect implements ISegmentAspect {
-        public static final ISegmentAspect INSTANCE = new StartAspect();
-
-        private StartAspect() {
-        }
-
-        @Override
-        public String getHelpText() {
-            return checkNotNull("Start Time");
-        }
-
-        @Override
-        public String getName() {
-            return checkNotNull("Start Time");
-        }
-
-        @Override
-        public @Nullable Comparator<?> getComparator() {
-            return SegmentComparators.INTERVAL_START_COMPARATOR;
-        }
-
-        @Override
-        public @Nullable String resolve(ISegment segment) {
-            return TmfTimestampFormat.getDefaulTimeFormat().format(segment.getStart());
-        }
-    }
-
-    private static final class EndAspect implements ISegmentAspect {
-        public static final ISegmentAspect INSTANCE = new EndAspect();
-
-        private EndAspect() {
-        }
-
-        @Override
-        public String getHelpText() {
-            return checkNotNull("End Time");
-        }
-
-        @Override
-        public String getName() {
-            return checkNotNull("End Time");
-        }
-
-        @Override
-        public @Nullable Comparator<?> getComparator() {
-            return SegmentComparators.INTERVAL_END_COMPARATOR;
-        }
-
-        @Override
-        public @Nullable String resolve(ISegment segment) {
-            return TmfTimestampFormat.getDefaulTimeFormat().format(segment.getEnd());
-        }
-    }
-
-    private static final Format FORMATTER = new DecimalFormat("###,###.##");
-    private static final class DurationAspect implements ISegmentAspect {
-        public static final ISegmentAspect INSTANCE = new DurationAspect();
-
-        private DurationAspect() {
-        }
-
-        @Override
-        public String getHelpText() {
-            return checkNotNull("Duration");
-        }
-
-        @Override
-        public String getName() {
-            return checkNotNull("Duration");
-        }
-
-        @Override
-        public @Nullable Comparator<?> getComparator() {
-            return SegmentComparators.INTERVAL_LENGTH_COMPARATOR;
-        }
-
-        @Override
-        public @Nullable String resolve(ISegment segment) {
-            return FORMATTER.format(segment.getLength());
         }
     }
 }
