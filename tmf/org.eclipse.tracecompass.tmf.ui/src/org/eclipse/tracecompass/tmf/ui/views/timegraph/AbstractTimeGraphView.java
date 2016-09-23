@@ -32,6 +32,8 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.core.filesystem.EFS;
+import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IMarkerDelta;
@@ -58,6 +60,7 @@ import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.commands.ActionHandler;
+import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.viewers.AbstractTreeViewer;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
@@ -78,6 +81,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
@@ -85,6 +89,9 @@ import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
 import org.eclipse.tracecompass.common.core.log.TraceCompassLog;
 import org.eclipse.tracecompass.internal.tmf.ui.Activator;
+import org.eclipse.tracecompass.internal.tmf.ui.markers.ConfigurableMarkerEventSource;
+import org.eclipse.tracecompass.internal.tmf.ui.markers.MarkerConfigXmlParser;
+import org.eclipse.tracecompass.internal.tmf.ui.markers.MarkerSet;
 import org.eclipse.tracecompass.tmf.core.resources.ITmfMarker;
 import org.eclipse.tracecompass.tmf.core.signal.TmfMarkerEventSourceUpdatedSignal;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSelectionRangeUpdatedSignal;
@@ -130,11 +137,14 @@ import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.widgets.Utils.TimeForma
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IWorkbenchActionConstants;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.handlers.IHandlerActivation;
 import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.ide.IDE;
 
 /**
  * An abstract view all time graph views can inherit
@@ -152,6 +162,7 @@ public abstract class AbstractTimeGraphView extends TmfView implements ITmfTimeA
     private static final Logger LOGGER = TraceCompassLog.getLogger(AbstractTimeGraphView.class);
     private static final String LOG_STRING_WITH_PARAM = "[TimeGraphView:%s] viewId=%s, %s"; //$NON-NLS-1$
     private static final String LOG_STRING = "[TimeGraphView:%s] viewId=%s"; //$NON-NLS-1$
+    private static final String MARKER_SET_KEY = "marker.set"; //$NON-NLS-1$
 
     /**
      * Redraw state enum
@@ -1654,7 +1665,18 @@ public abstract class AbstractTimeGraphView extends TmfView implements ITmfTimeA
                 if (trace == null) {
                     break;
                 }
-                markerEventSources.addAll(TmfTraceAdapterManager.getAdapters(trace, IMarkerEventSource.class));
+                List<@NonNull IMarkerEventSource> adapters = TmfTraceAdapterManager.getAdapters(trace, IMarkerEventSource.class);
+                markerEventSources.addAll(adapters);
+                for (MarkerSet markerSet : MarkerConfigXmlParser.getMarkerSets()) {
+                    if (markerSet.getId().equals(getDialogSettings().get(MARKER_SET_KEY))) {
+                        for (IMarkerEventSource source : adapters) {
+                            if (source instanceof ConfigurableMarkerEventSource) {
+                                ((ConfigurableMarkerEventSource) source).configure(markerSet);
+                            }
+                        }
+                    }
+                }
+
                 Job buildJob = new Job(getTitle() + Messages.AbstractTimeGraphView_BuildJob) {
                     @Override
                     protected IStatus run(IProgressMonitor monitor) {
@@ -2074,6 +2096,72 @@ public abstract class AbstractTimeGraphView extends TmfView implements ITmfTimeA
         fNextResourceAction.setToolTipText(getNextTooltip());
     }
 
+    private class MarkerSetAction extends Action {
+
+        private MarkerSet fMarkerSet;
+
+        public MarkerSetAction(MarkerSet markerSet) {
+            super(markerSet == null ? "None" : markerSet.getName(), IAction.AS_RADIO_BUTTON); //$NON-NLS-1$
+            fMarkerSet = markerSet;
+        }
+
+        @Override
+        public void runWithEvent(Event event) {
+            getDialogSettings().put(MARKER_SET_KEY, fMarkerSet == null ? null : fMarkerSet.getId());
+            for (ITmfTrace trace : getTracesToBuild(getTrace())) {
+                for (IMarkerEventSource source : TmfTraceAdapterManager.getAdapters(trace, IMarkerEventSource.class)) {
+                    if (source instanceof ConfigurableMarkerEventSource) {
+                        ((ConfigurableMarkerEventSource) source).configure(fMarkerSet);
+                    }
+                }
+            }
+            broadcast(new TmfMarkerEventSourceUpdatedSignal(AbstractTimeGraphView.this));
+        }
+    }
+
+    private static IDialogSettings getDialogSettings() {
+        IDialogSettings settings = Activator.getDefault().getDialogSettings();
+        IDialogSettings dialogSettings = settings.getSection(AbstractTimeGraphView.class.getName());
+        if (dialogSettings == null) {
+            dialogSettings = settings.addNewSection(AbstractTimeGraphView.class.getName());
+        }
+        return dialogSettings;
+    }
+
+    private MenuManager getMarkerSetMenu() {
+        final IDialogSettings dialogSettings = getDialogSettings();
+        MenuManager markerSetMenu = new MenuManager("Marker Set"); //$NON-NLS-1$
+        markerSetMenu.setRemoveAllWhenShown(true);
+        markerSetMenu.addMenuListener(new IMenuListener() {
+            @Override
+            public void menuAboutToShow(IMenuManager mgr) {
+                Action action = new MarkerSetAction(null);
+                action.setChecked(dialogSettings.get(MARKER_SET_KEY) == null || dialogSettings.get(MARKER_SET_KEY).isEmpty());
+                mgr.add(action);
+                List<MarkerSet> markerSets = MarkerConfigXmlParser.getMarkerSets();
+                for (MarkerSet markerSet : markerSets) {
+                    action = new MarkerSetAction(markerSet);
+                    action.setChecked(markerSet.getId().equals(dialogSettings.get(MARKER_SET_KEY)));
+                    mgr.add(action);
+                }
+                mgr.add(new Separator());
+                mgr.add(new Action("Edit...") { //$NON-NLS-1$
+                    @Override
+                    public void run() {
+                        IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+                        IFileStore fileStore = EFS.getLocalFileSystem().getStore(MarkerConfigXmlParser.MARKER_CONFIG_PATH);
+                        try {
+                            IDE.openEditorOnFileStore(page, fileStore);
+                        } catch (PartInitException e) {
+                            Activator.getDefault().logError("Error opening editor on " + MarkerConfigXmlParser.MARKER_CONFIG_PATH, e); //$NON-NLS-1$
+                        }
+                    }
+                });
+            }
+        });
+        return markerSetMenu;
+    }
+
     private void contributeToActionBars() {
         IActionBars bars = getViewSite().getActionBars();
         fillLocalToolBar(bars.getToolBarManager());
@@ -2114,6 +2202,7 @@ public abstract class AbstractTimeGraphView extends TmfView implements ITmfTimeA
      */
     protected void fillLocalMenu(IMenuManager manager) {
         manager.add(fTimeGraphWrapper.getTimeGraphViewer().getMarkersMenu());
+        manager.add(getMarkerSetMenu());
     }
 
     /**

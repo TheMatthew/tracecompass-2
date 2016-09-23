@@ -163,6 +163,28 @@ public class PeriodicMarkerEventSourceTest {
     }
 
     /**
+     * Test a marker event source with weighted length.
+     */
+    @Test
+    public void testWeightedLengthMarkerEventSource() {
+        int[] weights = new int[] { 3, 5, 2 };
+        RGBA[] colors = new RGBA[] { COLOR, ODD_COLOR, EVEN_COLOR };
+        IMarkerEventSource source = new PeriodicMarkerEventSource(CATEGORY, Reference.ZERO, 100L, 6, weights, colors, false);
+        assertEquals(Arrays.asList(CATEGORY), source.getMarkerCategories());
+        List<IMarkerEvent> expected = Arrays.asList(
+                new MarkerEvent(null, -20L, 20L, CATEGORY, EVEN_COLOR, "5", false),
+                new MarkerEvent(null, 0L, 30L, CATEGORY, COLOR, "0", false),
+                new MarkerEvent(null, 30L, 50L, CATEGORY, ODD_COLOR, "1", false),
+                new MarkerEvent(null, 80L, 20L, CATEGORY, EVEN_COLOR, "2", false),
+                new MarkerEvent(null, 100L, 30L, CATEGORY, COLOR, "3", false),
+                new MarkerEvent(null, 130L, 50L, CATEGORY, ODD_COLOR, "4", false),
+                new MarkerEvent(null, 180L, 20L, CATEGORY, EVEN_COLOR, "5", false),
+                new MarkerEvent(null, 200L, 30L, CATEGORY, COLOR, "0", false),
+                new MarkerEvent(null, 230L, 50L, CATEGORY, ODD_COLOR, "1", false));
+        assertMarkerListEquals(expected, source.getMarkerList(CATEGORY, 0L, 200L, 1, new NullProgressMonitor()));
+    }
+
+    /**
      * Test a query with a resolution.
      */
     @Test
@@ -177,6 +199,60 @@ public class PeriodicMarkerEventSourceTest {
                 new MarkerEvent(null, 100L, 10L, CATEGORY, EVEN_COLOR, "10", false),
                 new MarkerEvent(null, 130L, 10L, CATEGORY, ODD_COLOR, "13", false));
         assertMarkerListEquals(expected, source.getMarkerList(CATEGORY, 0L, 100L, 25, new NullProgressMonitor()));
+    }
+
+    /**
+     * Test a marker event source with a filtering implementation.
+     */
+    @Test
+    public void testIsApplicable() {
+        IMarkerEventSource source = new PeriodicMarkerEventSource(CATEGORY, Reference.ZERO, 100L, 0, COLOR, false) {
+            @Override
+            public boolean isApplicable(long time) {
+                return ((time <= 200L || time >= 800L) && time <= 1000L && getMarkerIndex(time) % 2 == 0);
+            }
+        };
+        assertEquals(Arrays.asList(CATEGORY), source.getMarkerCategories());
+        List<IMarkerEvent> expected = Arrays.asList(
+                new MarkerEvent(null, 0L, 0L, CATEGORY, COLOR, "0", false),
+                new MarkerEvent(null, 200L, 0L, CATEGORY, COLOR, "2", false),
+                new MarkerEvent(null, 800L, 0L, CATEGORY, COLOR, "8", false),
+                new MarkerEvent(null, 1000L, 0L, CATEGORY, COLOR, "10", false));
+        assertMarkerListEquals(expected, source.getMarkerList(CATEGORY, 0L, 1000L, 1, new NullProgressMonitor()));
+    }
+
+    /**
+     * Test the marker index getter.
+     */
+    @Test
+    public void testGetMarkerIndex() {
+        PeriodicMarkerEventSource source = new PeriodicMarkerEventSource(CATEGORY, Reference.ZERO, (100L / 7), 0, EVEN_COLOR, ODD_COLOR, false);
+        for (IMarkerEvent marker : source.getMarkerList(CATEGORY, 0L, 1000L, 1, new NullProgressMonitor())) {
+            long index = Long.parseLong(marker.getLabel());
+            assertEquals(index - 1, source.getMarkerIndex(marker.getTime() - 1));
+            for (long time = marker.getTime(); time < marker.getTime() + marker.getDuration(); time++) {
+                assertEquals(index, source.getMarkerIndex(time));
+            }
+            assertEquals(index + 1, source.getMarkerIndex(marker.getTime() + marker.getDuration()));
+        }
+    }
+
+    /**
+     * Test the marker index getter with a weighted length source.
+     */
+    @Test
+    public void testGetMarkerIndexWeighted() {
+        int[] weights = new int[] { 11, 13, 17 };
+        RGBA[] colors = new RGBA[] { COLOR, ODD_COLOR, EVEN_COLOR };
+        PeriodicMarkerEventSource source = new PeriodicMarkerEventSource(CATEGORY, Reference.ZERO, (997L / 7), 0, weights, colors, false);
+        for (IMarkerEvent marker : source.getMarkerList(CATEGORY, 0L, 1000L, 1, new NullProgressMonitor())) {
+            long index = Long.parseLong(marker.getLabel());
+            assertEquals(index - 1, source.getMarkerIndex(marker.getTime() - 1));
+            for (long time = marker.getTime(); time < marker.getTime() + marker.getDuration(); time++) {
+                assertEquals(index, source.getMarkerIndex(time));
+            }
+            assertEquals(index + 1, source.getMarkerIndex(marker.getTime() + marker.getDuration()));
+        }
     }
 
     private static void assertMarkerListEquals(@NonNull List<IMarkerEvent> expectedList, @NonNull List<@NonNull IMarkerEvent> markerList) {

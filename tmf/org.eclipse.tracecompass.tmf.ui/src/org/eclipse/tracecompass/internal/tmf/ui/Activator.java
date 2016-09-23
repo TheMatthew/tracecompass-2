@@ -20,6 +20,7 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.tracecompass.internal.tmf.ui.markers.ConfigurableMarkerEventSourceFactory;
 import org.eclipse.tracecompass.internal.tmf.ui.markers.LostEventsMarkerEventSourceFactory;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
@@ -57,6 +58,7 @@ public class Activator extends AbstractUIPlugin {
 
     private TmfEventAdapterFactory fTmfEventAdapterFactory;
     private LostEventsMarkerEventSourceFactory fLostEventMarkerEventSourceFactory;
+    private ConfigurableMarkerEventSourceFactory fConfigurableMarkerEventSourceFactory;
     private IPreferenceStore fCorePreferenceStore;
 
     // ------------------------------------------------------------------------
@@ -99,6 +101,8 @@ public class Activator extends AbstractUIPlugin {
         Platform.getAdapterManager().registerAdapters(fTmfEventAdapterFactory, ITmfEvent.class);
         fLostEventMarkerEventSourceFactory = new LostEventsMarkerEventSourceFactory();
         TmfTraceAdapterManager.registerFactory(fLostEventMarkerEventSourceFactory, ITmfTrace.class);
+        fConfigurableMarkerEventSourceFactory = new ConfigurableMarkerEventSourceFactory();
+        TmfTraceAdapterManager.registerFactory(fConfigurableMarkerEventSourceFactory, ITmfTrace.class);
     }
 
     @Override
@@ -110,6 +114,8 @@ public class Activator extends AbstractUIPlugin {
         Platform.getAdapterManager().unregisterAdapters(fTmfEventAdapterFactory);
         TmfTraceAdapterManager.unregisterFactory(fLostEventMarkerEventSourceFactory);
         fLostEventMarkerEventSourceFactory.dispose();
+        TmfTraceAdapterManager.unregisterFactory(fConfigurableMarkerEventSourceFactory);
+        fConfigurableMarkerEventSourceFactory.dispose();
         super.stop(context);
     }
 
