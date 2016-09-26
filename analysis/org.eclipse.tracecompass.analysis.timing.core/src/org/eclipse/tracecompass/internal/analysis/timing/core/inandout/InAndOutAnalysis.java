@@ -63,43 +63,44 @@ public class InAndOutAnalysis extends AbstractSegmentStoreAnalysisEventBasedModu
         List<@NonNull ISegmentAspect> aspects = new ArrayList<>();
         Iterables.addAll(aspects, super.getSegmentAspects());
         aspects.addAll(BASED_SEGMENT_ASPECTS);
-        aspects.add(new ISegmentAspect() {
-
-            @Override
-            public @Nullable Object resolve(@NonNull ISegment segment) {
-                if (segment instanceof InAndOutSegment) {
-                    return ((InAndOutSegment) segment).getName();
-                }
-                return null;
-            }
-
-            @Override
-            public @NonNull String getName() {
-                return "Type"; //$NON-NLS-1$
-            }
-
-            @Override
-            public @NonNull String getHelpText() {
-                return "Type, a pair of events minus the _begin and _end"; //$NON-NLS-1$
-            }
-
-            @Override
-            public @Nullable Comparator<?> getComparator() {
-
-                return new Comparator<ISegment>() {
-                    @Override
-                    public int compare(@Nullable ISegment o1, @Nullable ISegment o2) {
-                        if (!(o1 instanceof InAndOutSegment) || !(o2 instanceof InAndOutSegment)) {
-                            throw new IllegalArgumentException();
-                        }
-                        InAndOutSegment fs21 = (InAndOutSegment) o1;
-                        InAndOutSegment fs22 = (InAndOutSegment) o2;
-                        return fs21.getName().compareToIgnoreCase(fs22.getName());
-                    }
-                };
-            }
-        });
+        aspects.add(new NameAspect());
         return aspects;
+    }
+
+    public static final class NameAspect implements ISegmentAspect {
+        @Override
+        public @Nullable Object resolve(@NonNull ISegment segment) {
+            if (segment instanceof InAndOutSegment) {
+                return ((InAndOutSegment) segment).getName();
+            }
+            return null;
+        }
+
+        @Override
+        public @NonNull String getName() {
+            return "Type"; //$NON-NLS-1$
+        }
+
+        @Override
+        public @NonNull String getHelpText() {
+            return "Type, a pair of events minus the _begin and _end"; //$NON-NLS-1$
+        }
+
+        @Override
+        public @Nullable Comparator<?> getComparator() {
+
+            return new Comparator<ISegment>() {
+                @Override
+                public int compare(@Nullable ISegment o1, @Nullable ISegment o2) {
+                    if (!(o1 instanceof InAndOutSegment) || !(o2 instanceof InAndOutSegment)) {
+                        throw new IllegalArgumentException();
+                    }
+                    InAndOutSegment fs21 = (InAndOutSegment) o1;
+                    InAndOutSegment fs22 = (InAndOutSegment) o2;
+                    return fs21.getName().compareToIgnoreCase(fs22.getName());
+                }
+            };
+        }
     }
 
     private class FS2AnalysisRequest extends AbstractSegmentStoreAnalysisRequest {

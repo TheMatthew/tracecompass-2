@@ -3,7 +3,9 @@ package org.eclipse.tracecompass.internal.analysis.timing.ui.inandout.views;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
@@ -25,8 +27,6 @@ import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.MarkerEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeGraphEntry;
-
-import com.google.common.collect.Iterables;
 
 public class InAndOutChart extends AbstractTimeGraphView {
 
@@ -66,7 +66,7 @@ public class InAndOutChart extends AbstractTimeGraphView {
         }
         InAndOutAnalysis inAndOutAnalysis = (InAndOutAnalysis) module;
         fAnalyis = inAndOutAnalysis;
-        ISegmentAspect aspect = Iterables.<@Nullable ISegmentAspect> getFirst(inAndOutAnalysis.getSegmentAspects(), null);
+        ISegmentAspect aspect = getNameAspect(inAndOutAnalysis);
         if (aspect == null) {
             return;
         }
@@ -98,6 +98,11 @@ public class InAndOutChart extends AbstractTimeGraphView {
 
     }
 
+    private static @Nullable ISegmentAspect getNameAspect(InAndOutAnalysis inAndOutAnalysis) {
+        Optional<@NonNull ISegmentAspect> findAny = StreamSupport.stream(inAndOutAnalysis.getSegmentAspects().spliterator(), false).filter(aspect -> aspect instanceof InAndOutAnalysis.NameAspect).findAny();
+        return findAny.isPresent() ? findAny.get() : null;
+    }
+
     @Override
     protected @Nullable List<@NonNull ITimeEvent> getEventList(@NonNull TimeGraphEntry entry, long startTime, long endTime, long resolution, @NonNull IProgressMonitor monitor) {
         if (!(entry instanceof InAndOutGraphEntry)) {
@@ -124,7 +129,7 @@ public class InAndOutChart extends AbstractTimeGraphView {
             return super.getMarkerCategories();
         }
         List<String> ret = new ArrayList<>();
-        ISegmentAspect aspect = Iterables.<@Nullable ISegmentAspect> getFirst(module.getSegmentAspects(), null);
+        ISegmentAspect aspect = getNameAspect(module);
         if (aspect == null) {
             return super.getMarkerCategories();
         }
@@ -141,7 +146,7 @@ public class InAndOutChart extends AbstractTimeGraphView {
         if (module == null) {
             return ret;
         }
-        ISegmentAspect aspect = Iterables.<@Nullable ISegmentAspect> getFirst(module.getSegmentAspects(), null);
+        ISegmentAspect aspect = getNameAspect(module);
         if (aspect == null) {
             return ret;
         }
