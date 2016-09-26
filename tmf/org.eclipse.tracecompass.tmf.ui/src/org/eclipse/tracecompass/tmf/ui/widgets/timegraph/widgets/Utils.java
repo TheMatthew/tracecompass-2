@@ -87,7 +87,7 @@ public class Utils {
      * Ellipsis character, used to shorten strings that don't fit in their
      * target area.
      *
-     * @since 2.1
+     * @since 2.2
      */
     public static final String ELLIPSIS = "…"; //$NON-NLS-1$
 

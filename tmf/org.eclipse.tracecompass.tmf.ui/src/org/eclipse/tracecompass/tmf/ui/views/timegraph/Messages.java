@@ -24,7 +24,7 @@ public class Messages extends NLS {
     public static String AbstractTimeGraphtView_NextText;
     /**
      * Build Job title
-     * @since 2.1
+     * @since 2.2
      */
     public static String AbstractTimeGraphView_BuildJob;
 

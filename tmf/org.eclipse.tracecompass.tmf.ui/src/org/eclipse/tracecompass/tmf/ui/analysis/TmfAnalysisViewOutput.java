@@ -85,7 +85,7 @@ public class TmfAnalysisViewOutput implements IAnalysisOutput, IExecutableExtens
      * @return The view that was just opened
      * @throws PartInitException
      *             Exception if the view did not open correctly
-     * @since 2.1
+     * @since 2.2
      */
     protected IViewPart openView() throws PartInitException {
         final IWorkbench wb = PlatformUI.getWorkbench();

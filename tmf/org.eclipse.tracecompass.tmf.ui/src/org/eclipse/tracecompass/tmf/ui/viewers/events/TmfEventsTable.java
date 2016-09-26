@@ -644,7 +644,7 @@ public class TmfEventsTable extends TmfComponent implements IGotoMarker, IColorS
         /**
          * The position of the column
          *
-         * @since 2.1
+         * @since 2.2
          */
         String INDEX = "$index"; //$NON-NLS-1$
     }
@@ -2778,7 +2778,7 @@ public class TmfEventsTable extends TmfComponent implements IGotoMarker, IColorS
      * Get column widths
      *
      * @return the current visual widths of the receiver's columns
-     * @since 2.1
+     * @since 2.2
      */
     public int[] getColumnWidth() {
         return fColumnSize;
@@ -2788,7 +2788,7 @@ public class TmfEventsTable extends TmfComponent implements IGotoMarker, IColorS
      * Get whether the columns are resizable
      *
      * @return an array stating if each column is resizable
-     * @since 2.1
+     * @since 2.2
      */
     public boolean[] getColumnResizable() {
         return fColumnResizable;
@@ -2821,7 +2821,7 @@ public class TmfEventsTable extends TmfComponent implements IGotoMarker, IColorS
      *            an array of widths
      * @param resizable
      *            an array of bools saying if a column is resizable or not
-     * @since 2.1
+     * @since 2.2
      */
     public void setColumnWidth(int[] width, boolean[] resizable) {
         int length = fTable.getColumns().length;
