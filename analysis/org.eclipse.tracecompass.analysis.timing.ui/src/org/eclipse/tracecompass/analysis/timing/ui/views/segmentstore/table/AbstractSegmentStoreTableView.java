@@ -13,12 +13,23 @@
 
 package org.eclipse.tracecompass.analysis.timing.ui.views.segmentstore.table;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.FileDialog;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.tracecompass.tmf.ui.views.TmfView;
+
+import com.google.common.base.Joiner;
 
 /**
  * View for displaying a segment store analysis in a table.
@@ -27,6 +38,44 @@ import org.eclipse.tracecompass.tmf.ui.views.TmfView;
  * @since 2.0
  */
 public abstract class AbstractSegmentStoreTableView extends TmfView {
+
+    private final Action fExportAction = new Action() {
+        private final String[] fExtensions = { "*.tsv", "*.*" };//$NON-NLS-1$//$NON-NLS-2$
+
+        @Override
+        public void run() {
+            AbstractSegmentStoreTableViewer segmentStoreViewer = getSegmentStoreViewer();
+            if (segmentStoreViewer == null)
+                return;
+            FileDialog fd = new FileDialog(getViewSite().getShell());
+            fd.setFilterExtensions(fExtensions);
+            String fileName = fd.open();
+            try (PrintWriter pw = new PrintWriter(fileName)) {
+                Table table = segmentStoreViewer.getTableViewer().getTable();
+                int size = table.getItemCount();
+                List<String> columns = new ArrayList<>();
+                for (int i = 0; i < table.getColumnCount(); i++) {
+                    columns.add(table.getColumn(i).getText());
+                }
+                pw.println(Joiner.on('\t').join(columns));
+                for (int i = 0; i < size; i++) {
+                    TableItem item = table.getItem(i);
+                    List<String> data = new ArrayList<>();
+                    for (int col = 0; col < columns.size(); col++) {
+                        data.add(item.getText(col));
+                    }
+                    pw.println(Joiner.on('\t').join(data));
+                }
+            } catch (FileNotFoundException e) {
+
+            }
+        }
+
+        @Override
+        public String getText() {
+            return "Export to TSV";
+        }
+    };
 
     // ------------------------------------------------------------------------
     // Attributes
@@ -54,6 +103,7 @@ public abstract class AbstractSegmentStoreTableView extends TmfView {
         SashForm sf = new SashForm(parent, SWT.NONE);
         TableViewer tableViewer = new TableViewer(sf, SWT.FULL_SELECTION | SWT.VIRTUAL);
         fSegmentStoreViewer = createSegmentStoreViewer(tableViewer);
+        getViewSite().getActionBars().getMenuManager().add(fExportAction);
         setInitialData();
     }
 
