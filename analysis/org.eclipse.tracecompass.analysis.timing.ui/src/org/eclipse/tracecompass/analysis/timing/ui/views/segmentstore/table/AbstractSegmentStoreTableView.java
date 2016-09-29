@@ -17,6 +17,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.action.Action;
@@ -26,6 +27,7 @@ import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.tracecompass.tmf.ui.views.TmfView;
 
@@ -45,8 +47,9 @@ public abstract class AbstractSegmentStoreTableView extends TmfView {
         @Override
         public void run() {
             AbstractSegmentStoreTableViewer segmentStoreViewer = getSegmentStoreViewer();
-            if (segmentStoreViewer == null)
+            if (segmentStoreViewer == null) {
                 return;
+            }
             FileDialog fd = new FileDialog(getViewSite().getShell());
             fd.setFilterExtensions(fExtensions);
             String fileName = fd.open();
@@ -55,14 +58,21 @@ public abstract class AbstractSegmentStoreTableView extends TmfView {
                 int size = table.getItemCount();
                 List<String> columns = new ArrayList<>();
                 for (int i = 0; i < table.getColumnCount(); i++) {
-                    columns.add(table.getColumn(i).getText());
+                    TableColumn column = table.getColumn(i);
+                    if (column == null) {
+                        return;
+                    }
+                    columns.add(Objects.toString(column.getText()));
                 }
                 pw.println(Joiner.on('\t').join(columns));
                 for (int i = 0; i < size; i++) {
                     TableItem item = table.getItem(i);
+                    if( item == null) {
+                        continue;
+                    }
                     List<String> data = new ArrayList<>();
                     for (int col = 0; col < columns.size(); col++) {
-                        data.add(item.getText(col));
+                        data.add(Objects.toString(item.getText(col)));
                     }
                     pw.println(Joiner.on('\t').join(data));
                 }
