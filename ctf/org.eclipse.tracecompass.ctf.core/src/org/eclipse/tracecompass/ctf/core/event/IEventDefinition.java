@@ -96,7 +96,7 @@ public interface IEventDefinition {
      * Gets the stream context of a given event
      *
      * @return the stream context
-     * @since 2.0
+     * @since 2.1
      */
     default @Nullable ICompositeDefinition getStreamContext() {
         return null;
