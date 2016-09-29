@@ -43,13 +43,16 @@ import org.eclipse.tracecompass.ctf.core.trace.CTFTraceReader;
 import org.eclipse.tracecompass.ctf.core.trace.ICTFStream;
 import org.eclipse.tracecompass.ctf.core.trace.Metadata;
 import org.eclipse.tracecompass.internal.tmf.ctf.core.Activator;
+import org.eclipse.tracecompass.internal.tmf.ctf.core.event.aspect.CtfEventContextAspect;
+import org.eclipse.tracecompass.internal.tmf.ctf.core.event.aspect.CtfPacketContextAspect;
+import org.eclipse.tracecompass.internal.tmf.ctf.core.event.aspect.CtfStreamContextAspect;
 import org.eclipse.tracecompass.internal.tmf.ctf.core.trace.iterator.CtfIterator;
 import org.eclipse.tracecompass.internal.tmf.ctf.core.trace.iterator.CtfIteratorManager;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEventField;
 import org.eclipse.tracecompass.tmf.core.event.TmfEventField;
-import org.eclipse.tracecompass.tmf.core.event.aspect.TmfBaseAspects;
 import org.eclipse.tracecompass.tmf.core.event.aspect.ITmfEventAspect;
+import org.eclipse.tracecompass.tmf.core.event.aspect.TmfBaseAspects;
 import org.eclipse.tracecompass.tmf.core.exceptions.TmfTraceException;
 import org.eclipse.tracecompass.tmf.core.project.model.ITmfPropertiesProvider;
 import org.eclipse.tracecompass.tmf.core.timestamp.ITmfTimestamp;
@@ -76,6 +79,7 @@ import org.eclipse.tracecompass.tmf.ctf.core.event.aspect.CtfChannelAspect;
 import org.eclipse.tracecompass.tmf.ctf.core.event.aspect.CtfCpuAspect;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -116,6 +120,16 @@ public class CtfTmfTrace extends TmfTrace
             TmfBaseAspects.getEventTypeAspect(),
             TmfBaseAspects.getContentsAspect());
 
+    private static final @NonNull Collection<@NonNull ITmfEventAspect<?>> CTF_FULL_ASPECTS;
+
+    static{
+        Builder<ITmfEventAspect<?>> builder = new Builder<>();
+        builder.addAll(CTF_ASPECTS);
+        builder.add(new CtfPacketContextAspect());
+        builder.add(new CtfStreamContextAspect());
+        builder.add(new CtfEventContextAspect());
+        CTF_FULL_ASPECTS= builder.build();
+    }
     /**
      * The Ctf clock unique identifier field
      */
@@ -159,10 +173,7 @@ public class CtfTmfTrace extends TmfTrace
      * Default constructor
      */
     public CtfTmfTrace() {
-        super();
-
-        /* Use default event factory */
-        fEventFactory = CtfTmfEventFactory.instance();
+        this(CtfTmfEventFactory.instance());
     }
 
     /**
@@ -334,7 +345,7 @@ public class CtfTmfTrace extends TmfTrace
 
     @Override
     public Iterable<ITmfEventAspect<?>> getEventAspects() {
-        return CTF_ASPECTS;
+        return CTF_FULL_ASPECTS;
     }
 
     /**

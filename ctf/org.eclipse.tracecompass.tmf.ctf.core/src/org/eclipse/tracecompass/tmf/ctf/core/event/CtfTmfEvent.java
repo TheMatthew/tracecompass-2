@@ -352,6 +352,35 @@ public class CtfTmfEvent extends TmfEvent
         return fPacketAttributes;
     }
 
+    /**
+     * Get the Packet Context
+     *
+     * @return the packet context
+     * @since 2.1
+     */
+    public @Nullable ICompositeDefinition getPacketContext() {
+        return fEvent.getPacketContext();
+    }
+
+    /**
+     * Get the Stream Context
+     *
+     * @return the stream context
+     * @since 2.1
+     */
+    public @Nullable ICompositeDefinition getStreamContext() {
+        return fEvent.getStreamContext();
+    }
+
+    /**
+     * Get the event context
+     *
+     * @return The event context
+     * @since 2.1
+     */
+    public @Nullable ICompositeDefinition getEventContext() {
+        return fEvent.getEventContext();
+    }
     // ------------------------------------------------------------------------
     // Object
     // ------------------------------------------------------------------------
