@@ -56,6 +56,7 @@ import org.eclipse.tracecompass.tmf.core.segment.ISegmentAspect;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSignalHandler;
 import org.eclipse.tracecompass.tmf.core.statesystem.TmfStateSystemAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
+import org.eclipse.tracecompass.tmf.core.trace.TmfTrace;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceContext;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceManager;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceUtils;
@@ -573,8 +574,14 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         return fThreadValue;
     }
 
-    protected @Nullable IAnalysisModule getFutexModule(ITmfTrace trace) {
-        return trace.getAnalysisModule("futex analysis lttng"); //$NON-NLS-1$
+    private @Nullable static IAnalysisModule getFutexModule(ITmfTrace trace) {
+        String analysisId = "futex analysis lttng"; //$NON-NLS-1$
+        @Nullable
+        IAnalysisModule analysisModule = trace.getAnalysisModule(analysisId);
+        if (analysisModule == null) {
+            return trace.getChildren(TmfTrace.class).stream().map(a -> a.getAnalysisModule((analysisId))).filter(elem -> elem != null).findAny().orElse(null);
+        }
+        return analysisModule; // $NON-NLS-1$
     }
 
     @Override
