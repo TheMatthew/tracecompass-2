@@ -30,12 +30,24 @@ import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.MarkerEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeGraphEntry;
 
+/**
+ * An in and out chart. This chart is used to graph the I2C bus on a rover
+ *
+ * @author Matthew Khouzam
+ */
 public class InAndOutChart extends AbstractTimeGraphView {
 
+    private static final RGBA PONTENTION_COLOR = new RGBA(200, 160, 20, 150);
     private static final RGBA CONTENTION_COLOR = new RGBA(200, 20, 20, 150);
-    public static final String ID = "org.eclipse.tracecompass.inandoutchart";
+    /**
+     * ID
+     */
+    public static final String ID = "org.eclipse.tracecompass.inandoutchart"; //$NON-NLS-1$
     private InAndOutAnalysis fAnalyis;
 
+    /**
+     * Constructor
+     */
     public InAndOutChart() {
         super(ID, new TimeGraphPresentationProvider() {
             private final StateItem[] SI = { new StateItem(new RGB(124, 201, 223)) };
@@ -144,7 +156,7 @@ public class InAndOutChart extends AbstractTimeGraphView {
         ISegmentStoreProvider storeProvider = (ISegmentStoreProvider) moduleFutex;
         ISegmentStore<@NonNull ISegment> segmentStore = storeProvider.getSegmentStore();
         if (segmentStore != null) {
-            ret.add("Block");
+            ret.add(getMarkerTitle2());
         }
         return ret;
     }
@@ -161,7 +173,7 @@ public class InAndOutChart extends AbstractTimeGraphView {
         if (aspect == null) {
             return ret;
         }
-        ret.addAll(module.getMarkers().stream().map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), getMarkerTitle(aspect, segment), CONTENTION_COLOR, getMarkerTitle(aspect, segment), false)).collect(Collectors.toList()));
+        ret.addAll(module.getMarkers().stream().map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), getMarkerTitle(aspect, segment), PONTENTION_COLOR, getMarkerTitle(aspect, segment), false)).collect(Collectors.toList()));
         IAnalysisModule moduleFutex = getFutexModule(getTrace());
         if (!(moduleFutex instanceof ISegmentStoreProvider)) {
             return ret;
@@ -170,10 +182,7 @@ public class InAndOutChart extends AbstractTimeGraphView {
         ISegmentStore<@NonNull ISegment> segmentStore = storeProvider.getSegmentStore();
         if (segmentStore != null) {
             ret.addAll(segmentStore.stream()
-                    .filter(
-                            segment -> {
-                                return segment.toString().contains("WAKE");
-                            })
+                    .filter(segment -> segment.toString().contains("WAKE")) //$NON-NLS-1$
                     .map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), getMarkerTitle2(), CONTENTION_COLOR, getMarkerTitle2(), false)).collect(Collectors.toList()));
         }
 
@@ -185,10 +194,11 @@ public class InAndOutChart extends AbstractTimeGraphView {
     }
 
     private @Nullable static IAnalysisModule getFutexModule(ITmfTrace trace) {
+        String analysisId = "futex analysis lttng"; //$NON-NLS-1$
         @Nullable
-        IAnalysisModule analysisModule = trace.getAnalysisModule("futex analysis lttng");
+        IAnalysisModule analysisModule = trace.getAnalysisModule(analysisId);
         if (analysisModule == null) {
-            return trace.getChildren(TmfTrace.class).stream().map(a -> a.getAnalysisModule(("futex analysis lttng"))).filter(elem -> elem != null).findAny().orElse(null);
+            return trace.getChildren(TmfTrace.class).stream().map(a -> a.getAnalysisModule((analysisId))).filter(elem -> elem != null).findAny().orElse(null);
         }
         return analysisModule; // $NON-NLS-1$
     }
