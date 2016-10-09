@@ -15,13 +15,16 @@ package org.eclipse.tracecompass.tmf.ui.viewers.xycharts.linecharts;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.tracecompass.common.core.log.TraceCompassLog;
 import org.eclipse.tracecompass.tmf.core.signal.TmfSignalManager;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 import org.eclipse.tracecompass.tmf.ui.signal.TmfTimeViewAlignmentInfo;
@@ -66,6 +69,9 @@ public abstract class TmfCommonXLineChartViewer extends TmfXYChartViewer {
 
     private UpdateThread fUpdateThread;
 
+    private static final Logger LOGGER = TraceCompassLog.getLogger(TmfCommonXLineChartViewer.class);
+    private static final String LOG_STRING_WITH_PARAM = "[TmfCommonXLineChart:%s] viewerId=%s, %s"; //$NON-NLS-1$
+    private static final String LOG_STRING = "[TmfCommonXLineChart:%s] viewerId=%s"; //$NON-NLS-1$
     /**
      * Constructor
      *
@@ -101,6 +107,25 @@ public abstract class TmfCommonXLineChartViewer extends TmfXYChartViewer {
     public void loadTrace(ITmfTrace trace) {
         super.loadTrace(trace);
         reinitialize();
+    }
+
+    /**
+     * Formats a log message for this class
+     *
+     * @param event
+     *            The event to log, that will be appended to the class name to
+     *            make the full event name
+     * @param parameters
+     *            The string of extra parameters to add to the log message, in
+     *            the format name=value[, name=value]*, or <code>null</code> for
+     *            no params
+     * @return The complete log message for this class
+     */
+    private String getLogMessage(String event, @Nullable String parameters) {
+        if (parameters == null) {
+            return String.format(LOG_STRING, event, getClass().getName());
+        }
+        return String.format(LOG_STRING_WITH_PARAM, event, getClass().getName(), parameters);
     }
 
     /**
@@ -152,12 +177,8 @@ public abstract class TmfCommonXLineChartViewer extends TmfXYChartViewer {
 
         @Override
         public void run() {
-            Display.getDefault().syncExec(new Runnable() {
-                @Override
-                public void run() {
-                    updateData(getWindowStartTime(), getWindowEndTime(), fNumRequests, fMonitor);
-                }
-            });
+            LOGGER.info(() -> getLogMessage("UpdateThreadStart", "numRequests=" + fNumRequests + ", tid=" + getId())); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            updateData(getWindowStartTime(), getWindowEndTime(), fNumRequests, fMonitor);
             updateThreadFinished(this);
         }
 
@@ -341,6 +362,7 @@ public abstract class TmfCommonXLineChartViewer extends TmfXYChartViewer {
 
             @Override
             public void run() {
+                LOGGER.info(() -> getLogMessage("UpdateDisplayStart", null)); //$NON-NLS-1$
                 if (!getSwtChart().isDisposed()) {
                     double[] xValues = fXValues;
                     if (xValues.length < 1) {
@@ -387,6 +409,7 @@ public abstract class TmfCommonXLineChartViewer extends TmfXYChartViewer {
                         TmfSignalManager.dispatchSignal(new TmfTimeViewAlignmentSignal(TmfCommonXLineChartViewer.this, timeAlignmentInfo, true));
                     }
                 }
+                LOGGER.info(() -> getLogMessage("UpdateDisplayEnd", null)); //$NON-NLS-1$
             }
         });
     }
