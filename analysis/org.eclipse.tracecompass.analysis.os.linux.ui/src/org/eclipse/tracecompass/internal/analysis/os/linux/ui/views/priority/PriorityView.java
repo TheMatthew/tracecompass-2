@@ -60,6 +60,7 @@ import org.eclipse.tracecompass.tmf.core.trace.TmfTrace;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceContext;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceManager;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTraceUtils;
+import org.eclipse.tracecompass.tmf.ui.util.TmfColorRegistry;
 import org.eclipse.tracecompass.tmf.ui.views.timegraph.AbstractStateSystemTimeGraphView;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.IMarkerEvent;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeEvent;
@@ -93,7 +94,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
     // Timeout between updates in the build thread in ms
     private static final long BUILD_UPDATE_TIMEOUT = 500;
 
-    private static final RGBA CONTENTION_COLOR = new RGBA(200, 100, 30, 70);
+    private static final RGBA CONTENTION_COLOR_RGB = TmfColorRegistry.getInstance().getColorRGBA("CONTENTION"); //$NON-NLS-1$
 
     private @Nullable ITmfStateValue fThreadValue;
 
@@ -169,7 +170,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
                 if (resourcesEntry.getType().equals(PriorityViewEntry.Type.THREAD)) {
                     int thread = resourcesEntry.getId();
                     KernelAnalysisModule module = TmfTraceUtils.getAnalysisModuleOfClass(resourcesEntry.getTrace(), KernelAnalysisModule.class, KernelAnalysisModule.ID);
-                    if(module == null) {
+                    if (module == null) {
                         return;
                     }
                     String execName = KernelThreadInformationProvider.getExecutableName(module, thread);
@@ -347,7 +348,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
             int prioQ = ssq.getQuarkRelative(threadQuark, Attributes.PRIO);
             int prio = ssq.querySingleState(currentThreadInterval.getStartTime(), prioQ).getStateValue().unboxInt();
             KernelAnalysisModule module = TmfTraceUtils.getAnalysisModuleOfClass(trace, KernelAnalysisModule.class, KernelAnalysisModule.ID);
-            if( module == null) {
+            if (module == null) {
                 continue;
             }
             String execName = KernelThreadInformationProvider.getExecutableName(module, currenthread);
@@ -475,7 +476,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
 
     private static List<ITimeEvent> createCpuEventsList(ITimeGraphEntry entry, List<List<ITmfStateInterval>> fullStates, List<ITmfStateInterval> prevFullState, IProgressMonitor monitor, int quark) {
         List<ITimeEvent> eventList;
-        int statusQuark= quark;
+        int statusQuark = quark;
         boolean isZoomThread = Thread.currentThread() instanceof ZoomThread;
         eventList = new ArrayList<>(fullStates.size());
         ITmfStateInterval lastInterval = prevFullState == null || statusQuark >= prevFullState.size() ? null : prevFullState.get(statusQuark);
@@ -539,6 +540,7 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         startZoomThread(getTimeGraphViewer().getTime0(), getTimeGraphViewer().getTime1());
     }
 
+    @SuppressWarnings("restriction")
     @Override
     protected @NonNull List<IMarkerEvent> getViewMarkerList(ITmfStateSystem ss,
             @NonNull List<List<ITmfStateInterval>> fullStates, @Nullable List<ITmfStateInterval> prevFullState, @NonNull IProgressMonitor monitor) {
@@ -554,18 +556,20 @@ public class PriorityView extends AbstractStateSystemTimeGraphView {
         if (aspect == null || segmentStore == null) {
             return ret;
         }
-        @Nullable ITmfStateValue threadFollowed = getThreadFollowed();
+        @Nullable
+        ITmfStateValue threadFollowed = getThreadFollowed();
         ret.addAll(segmentStore.stream()
-                .filter(segment->segment instanceof TmfXmlPatternSegment)
-                .<TmfXmlPatternSegment>filter(segment-> Objects.equals(((TmfXmlPatternSegment)segment).getContent().get("thread"),(threadFollowed)))
-                .map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), "thread", CONTENTION_COLOR, NonNullUtils.nullToEmptyString(threadFollowed), false))
+                .filter(segment -> segment instanceof TmfXmlPatternSegment)
+                .<TmfXmlPatternSegment> filter(segment -> Objects.equals(((TmfXmlPatternSegment) segment).getContent().get("thread"), (threadFollowed)))
+                .map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), "thread", CONTENTION_COLOR_RGB, NonNullUtils.nullToEmptyString(threadFollowed), false))
                 .collect(Collectors.toList()));
         return ret;
     }
 
     private @Nullable ITmfStateValue getThreadFollowed() {
         TmfTraceContext ctx = TmfTraceManager.getInstance().getCurrentTraceContext();
-        @Nullable Object data = ctx.getData(RESOURCES_FOLLOW_THREAD);
+        @Nullable
+        Object data = ctx.getData(RESOURCES_FOLLOW_THREAD);
         if (data instanceof Integer) {
             fThreadValue = TmfStateValue.newValueLong(((Integer) data).longValue());
         } else if (data instanceof Long) {

@@ -11,6 +11,7 @@ package org.eclipse.tracecompass.internal.analysis.graph.ui;
 
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.tracecompass.tmf.ui.util.TmfColorRegistry;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -37,6 +38,25 @@ public class Activator extends AbstractUIPlugin {
     public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
+        TmfColorRegistry.getInstance().register("RUNNING", 0x33, 0x99, 0x00, 0xff); //$NON-NLS-1$
+        /** Worker is interrupted */
+        TmfColorRegistry.getInstance().register("INTERRUPTED", 0xff, 0xdc, 0x00, 0xff); //$NON-NLS-1$
+        /** Worker has been preempted */
+        TmfColorRegistry.getInstance().register("PREEMPTED", 0xc8, 0x64, 0x00, 0xff); //$NON-NLS-1$
+        /** Worker waiting on a timer */
+        TmfColorRegistry.getInstance().register("TIMER", 0x33, 0x66, 0x99, 0xff); //$NON-NLS-1$
+        /** Worker is blocked, waiting on a device */
+        TmfColorRegistry.getInstance().register("BLOCK_DEVICE", 0x66, 0x00, 0xcc, 0xff); //$NON-NLS-1$
+        /** Worker is waiting for user input */
+        TmfColorRegistry.getInstance().register("USER_INPUT", 0x5a, 0x01, 0x01, 0xff); //$NON-NLS-1$
+        /** Worker is waiting on network */
+        TmfColorRegistry.getInstance().register("NETWORK", 0xff, 0x9b, 0xff, 0xff); //$NON-NLS-1$
+        /** Worker is waiting for an IPI */
+        TmfColorRegistry.getInstance().register("IPI", 0x66, 0x66, 0xcc, 0xff); //$NON-NLS-1$
+        /** Any other reason */
+        TmfColorRegistry.getInstance().register("UNKNOWN", 0x40, 0x3b, 0x33, 0xff); //$NON-NLS-1$
+
+
     }
 
     @Override

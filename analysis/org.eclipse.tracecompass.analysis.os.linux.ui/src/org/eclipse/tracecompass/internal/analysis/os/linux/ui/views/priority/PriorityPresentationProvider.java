@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.swt.graphics.RGB;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernel.KernelAnalysisModule;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernel.StateValues;
 import org.eclipse.tracecompass.internal.analysis.os.linux.core.kernel.Attributes;
@@ -30,6 +29,7 @@ import org.eclipse.tracecompass.statesystem.core.interval.ITmfStateInterval;
 import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
 import org.eclipse.tracecompass.tmf.core.statesystem.TmfStateSystemAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.util.Pair;
+import org.eclipse.tracecompass.tmf.ui.util.TmfColorRegistry;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.StateItem;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.TimeGraphPresentationProvider;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeEvent;
@@ -44,6 +44,12 @@ import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.TimeEvent;
  *
  */
 public class PriorityPresentationProvider extends TimeGraphPresentationProvider {
+
+    private static final StateItem[] STATE_TABLE = new StateItem[2];
+    static{
+        STATE_TABLE[0] = new StateItem(TmfColorRegistry.getInstance().getColor("USERMODE")); //$NON-NLS-1$
+        STATE_TABLE[1] = new StateItem(TmfColorRegistry.getInstance().getColor("SYSCALL")); //$NON-NLS-1$
+    }
 
     @Override
     public int getStateTableIndex(ITimeEvent event) {
@@ -126,9 +132,6 @@ public class PriorityPresentationProvider extends TimeGraphPresentationProvider 
 
     @Override
     public StateItem[] getStateTable() {
-        StateItem[] stateTable = new StateItem[2];
-        stateTable[0] = new StateItem(new RGB(100, 200, 100));
-        stateTable[1] = new StateItem(new RGB(100, 100, 200));
-        return stateTable;
+        return STATE_TABLE;
     }
 }

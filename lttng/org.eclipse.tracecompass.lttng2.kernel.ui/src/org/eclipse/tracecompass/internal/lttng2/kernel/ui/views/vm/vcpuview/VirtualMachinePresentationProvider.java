@@ -19,6 +19,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.tracecompass.analysis.os.linux.core.kernel.StateValues;
 import org.eclipse.tracecompass.internal.lttng2.kernel.core.analysis.vm.VcpuStateValues;
 import org.eclipse.tracecompass.internal.lttng2.kernel.ui.views.vm.vcpuview.VirtualMachineCommon.Type;
+import org.eclipse.tracecompass.tmf.ui.util.TmfColorRegistry;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.StateItem;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.TimeGraphPresentationProvider;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeEvent;
@@ -41,22 +42,22 @@ public class VirtualMachinePresentationProvider extends TimeGraphPresentationPro
      * view. Ideally, we should reuse what is there instead of rewriting it here
      */
     private enum State {
-        UNKNOWN(new RGB(100, 100, 100)),
-        IDLE(new RGB(200, 200, 200)),
-        USERMODE(new RGB(0, 200, 0)),
-        WAIT_VMM(new RGB(200, 0, 0)),
-        VCPU_PREEMPTED(new RGB(120, 40, 90)),
-        THREAD_UNKNOWN(new RGB(100, 100, 100)),
-        THREAD_WAIT_BLOCKED(new RGB(200, 200, 0)),
-        THREAD_WAIT_FOR_CPU(new RGB(200, 100, 0)),
-        THREAD_USERMODE(new RGB(0, 200, 0)),
-        THREAD_SYSCALL(new RGB(0, 0, 200)),
-        THREAD_INTERRUPTED(new RGB(200, 0, 100));
+        UNKNOWN            ,
+        IDLE               ,
+        USERMODE           ,
+        WAIT_VMM           ,
+        VCPU_PREEMPTED     ,
+        THREAD_UNKNOWN     ,
+        THREAD_WAIT_BLOCKED,
+        THREAD_WAIT_FOR_CPU,
+        THREAD_USERMODE    ,
+        THREAD_SYSCALL     ,
+        THREAD_INTERRUPTED ;
 
         private final RGB fRgb;
 
-        private State(RGB rgb) {
-            fRgb = rgb;
+        private State() {
+            fRgb = TmfColorRegistry.getInstance().getColor(toString());
         }
     }
 

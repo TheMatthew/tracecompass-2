@@ -24,6 +24,7 @@ import org.eclipse.tracecompass.statesystem.core.ITmfStateSystem;
 import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedException;
 import org.eclipse.tracecompass.statesystem.core.exceptions.TimeRangeException;
 import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
+import org.eclipse.tracecompass.tmf.ui.util.TmfColorRegistry;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.StateItem;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.TimeGraphPresentationProvider;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeEvent;
@@ -78,13 +79,12 @@ public class CallStackPresentationProvider extends TimeGraphPresentationProvider
             });
 
     private enum State {
-        MULTIPLE (new RGB(100, 100, 100)),
-        EXEC     (new RGB(0, 200, 0));
+        MULTIPLE, EXEC;
 
         private final RGB rgb;
 
-        private State (RGB rgb) {
-            this.rgb = rgb;
+        private State() {
+            this.rgb = TmfColorRegistry.getInstance().getColor(toString());
         }
     }
 
@@ -114,13 +114,10 @@ public class CallStackPresentationProvider extends TimeGraphPresentationProvider
 
     @Override
     public StateItem[] getStateTable() {
-        final float saturation = 0.6f;
-        final float brightness = 0.6f;
         StateItem[] stateTable = new StateItem[NUM_COLORS + 1];
         stateTable[0] = new StateItem(State.MULTIPLE.rgb, State.MULTIPLE.toString());
         for (int i = 0; i < NUM_COLORS; i++) {
-            RGB rgb = new RGB(i, saturation, brightness);
-            stateTable[i + 1] = new StateItem(rgb, State.EXEC.toString());
+            stateTable[i + 1] = new StateItem(TmfColorRegistry.getInstance().getColor(State.MULTIPLE.toString() + i), State.EXEC.toString());
         }
         return stateTable;
     }

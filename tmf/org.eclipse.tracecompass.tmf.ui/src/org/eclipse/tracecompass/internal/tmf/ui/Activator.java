@@ -20,6 +20,7 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.tracecompass.internal.tmf.ui.markers.ConfigurableMarkerEventSourceFactory;
 import org.eclipse.tracecompass.internal.tmf.ui.markers.LostEventsMarkerEventSourceFactory;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
@@ -28,6 +29,7 @@ import org.eclipse.tracecompass.tmf.core.trace.TmfTraceAdapterManager;
 import org.eclipse.tracecompass.tmf.ui.TmfUiRefreshHandler;
 import org.eclipse.tracecompass.tmf.ui.project.model.TmfExperimentElement;
 import org.eclipse.tracecompass.tmf.ui.project.model.TmfTraceElement;
+import org.eclipse.tracecompass.tmf.ui.util.TmfColorRegistry;
 import org.eclipse.tracecompass.tmf.ui.viewers.events.TmfEventAdapterFactory;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
@@ -103,6 +105,14 @@ public class Activator extends AbstractUIPlugin {
         TmfTraceAdapterManager.registerFactory(fLostEventMarkerEventSourceFactory, ITmfTrace.class);
         fConfigurableMarkerEventSourceFactory = new ConfigurableMarkerEventSourceFactory();
         TmfTraceAdapterManager.registerFactory(fConfigurableMarkerEventSourceFactory, ITmfTrace.class);
+        TmfColorRegistry.getInstance().register("MULTIPLE", 100, 100, 100, 255); //$NON-NLS-1$
+        TmfColorRegistry.getInstance().register("EXEC", 0, 200, 0, 255); //$NON-NLS-1$
+        for (int i = 0; i < 360; i++) {
+            final float saturation = 0.6f;
+            final float brightness = 0.6f;
+            RGB rgb = new RGB(i, saturation, brightness);
+            TmfColorRegistry.getInstance().register("MULTIPLE" + i, rgb.red, rgb.green, rgb.blue, 0xff); //$NON-NLS-1$
+        }
     }
 
     @Override
@@ -121,11 +131,12 @@ public class Activator extends AbstractUIPlugin {
 
     /**
      * Returns a preference store for org.eclipse.linux.tmf.core preferences
+     *
      * @return the preference store
      */
     public IPreferenceStore getCorePreferenceStore() {
         if (fCorePreferenceStore == null) {
-            fCorePreferenceStore= new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_CORE_ID);
+            fCorePreferenceStore = new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_CORE_ID);
         }
         return fCorePreferenceStore;
     }

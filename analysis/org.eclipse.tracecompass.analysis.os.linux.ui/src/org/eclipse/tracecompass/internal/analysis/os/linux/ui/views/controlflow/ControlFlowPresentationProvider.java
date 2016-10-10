@@ -37,6 +37,7 @@ import org.eclipse.tracecompass.statesystem.core.interval.ITmfStateInterval;
 import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
 import org.eclipse.tracecompass.tmf.core.statesystem.TmfStateSystemAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
+import org.eclipse.tracecompass.tmf.ui.util.TmfColorRegistry;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.StateItem;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.TimeGraphPresentationProvider;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeEvent;
@@ -50,18 +51,18 @@ import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.widgets.Utils;
 public class ControlFlowPresentationProvider extends TimeGraphPresentationProvider {
 
     private enum State {
-        UNKNOWN        (new RGB(100, 100, 100)),
-        WAIT_UNKNOWN   (new RGB(200, 200, 200)),
-        WAIT_BLOCKED   (new RGB(200, 200, 0)),
-        WAIT_FOR_CPU   (new RGB(200, 100, 0)),
-        USERMODE       (new RGB(0,   200, 0)),
-        SYSCALL        (new RGB(0,     0, 200)),
-        INTERRUPTED    (new RGB(200,   0, 100));
+        UNKNOWN,
+        WAIT_UNKNOWN,
+        WAIT_BLOCKED,
+        WAIT_FOR_CPU,
+        USERMODE,
+        SYSCALL,
+        INTERRUPTED;
 
         public final RGB rgb;
 
-        private State(RGB rgb) {
-            this.rgb = rgb;
+        private State() {
+            this.rgb = TmfColorRegistry.getInstance().getColor(toString());
         }
 
     }

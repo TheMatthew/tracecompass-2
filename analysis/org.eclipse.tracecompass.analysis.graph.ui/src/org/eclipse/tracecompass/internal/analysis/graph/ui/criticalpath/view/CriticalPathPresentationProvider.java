@@ -16,6 +16,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.tracecompass.common.core.NonNullUtils;
+import org.eclipse.tracecompass.tmf.ui.util.TmfColorRegistry;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.StateItem;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.TimeGraphPresentationProvider;
 import org.eclipse.tracecompass.tmf.ui.widgets.timegraph.model.ITimeEvent;
@@ -34,29 +35,29 @@ public class CriticalPathPresentationProvider extends TimeGraphPresentationProvi
      */
     public static enum State {
         /** Worker is running */
-        RUNNING(new RGB(0x33, 0x99, 0x00)),
+        RUNNING,
         /** Worker is interrupted */
-        INTERRUPTED(new RGB(0xff, 0xdc, 0x00)),
+        INTERRUPTED,
         /** Worker has been preempted */
-        PREEMPTED(new RGB(0xc8, 0x64, 0x00)),
+        PREEMPTED,
         /** Worker waiting on a timer */
-        TIMER(new RGB(0x33, 0x66, 0x99)),
+        TIMER,
         /** Worker is blocked, waiting on a device */
-        BLOCK_DEVICE(new RGB(0x66, 0x00, 0xcc)),
+        BLOCK_DEVICE,
         /** Worker is waiting for user input */
-        USER_INPUT(new RGB(0x5a, 0x01, 0x01)),
+        USER_INPUT,
         /** Worker is waiting on network */
-        NETWORK(new RGB(0xff, 0x9b, 0xff)),
+        NETWORK,
         /** Worker is waiting for an IPI */
-        IPI(new RGB(0x66, 0x66, 0xcc)),
+        IPI,
         /** Any other reason */
-        UNKNOWN(new RGB(0x40, 0x3b, 0x33));
+        UNKNOWN;
 
         /** RGB color associated with a state */
         public final RGB rgb;
 
-        private State(RGB rgb) {
-            this.rgb = rgb;
+        private State() {
+            this.rgb = TmfColorRegistry.getInstance().getColor(toString());
         }
     }
 

@@ -98,7 +98,6 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
         }
     }
 
-
     /**
      * @since 2.0
      */
@@ -219,7 +218,10 @@ public class ResourcesView extends AbstractStateSystemTimeGraphView {
                     }
                     List<ITimeEvent> eventList = getEventList(entry, ssq, fullStates, prevFullState, monitor);
                     if (eventList != null) {
-                        /* Start a new event list on first iteration, then append to it */
+                        /*
+                         * Start a new event list on first iteration, then
+                         * append to it
+                         */
                         if (prevFullState == null) {
                             entry.setEventList(eventList);
                         } else {
