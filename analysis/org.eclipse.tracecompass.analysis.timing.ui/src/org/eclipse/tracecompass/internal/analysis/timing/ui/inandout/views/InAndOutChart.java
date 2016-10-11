@@ -2,8 +2,10 @@ package org.eclipse.tracecompass.internal.analysis.timing.ui.inandout.views;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -19,6 +21,7 @@ import org.eclipse.tracecompass.segmentstore.core.ISegment;
 import org.eclipse.tracecompass.segmentstore.core.ISegmentStore;
 import org.eclipse.tracecompass.tmf.core.analysis.IAnalysisModule;
 import org.eclipse.tracecompass.tmf.core.segment.ISegmentAspect;
+import org.eclipse.tracecompass.tmf.core.signal.TmfTraceSelectedSignal;
 import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 import org.eclipse.tracecompass.tmf.core.trace.TmfTrace;
 import org.eclipse.tracecompass.tmf.ui.views.timegraph.AbstractTimeGraphView;
@@ -43,7 +46,7 @@ public class InAndOutChart extends AbstractTimeGraphView {
      * ID
      */
     public static final String ID = "org.eclipse.tracecompass.inandoutchart"; //$NON-NLS-1$
-    private InAndOutAnalysis fAnalyis;
+    private final Set<InAndOutAnalysis> fAnalyis = new HashSet<>();
 
     /**
      * Constructor
@@ -79,7 +82,7 @@ public class InAndOutChart extends AbstractTimeGraphView {
             return;
         }
         InAndOutAnalysis inAndOutAnalysis = (InAndOutAnalysis) module;
-        fAnalyis = inAndOutAnalysis;
+        fAnalyis.add(inAndOutAnalysis);
         ISegmentAspect aspect = getNameAspect(inAndOutAnalysis);
         if (aspect == null) {
             return;
@@ -138,54 +141,64 @@ public class InAndOutChart extends AbstractTimeGraphView {
 
     @Override
     protected @NonNull List<String> getMarkerCategories() {
-        InAndOutAnalysis module = fAnalyis;
-        if (module == null) {
-            return super.getMarkerCategories();
-        }
+        Set<InAndOutAnalysis> set = fAnalyis;
         List<String> ret = new ArrayList<>();
-        ISegmentAspect aspect = getNameAspect(module);
-        if (aspect == null) {
-            return super.getMarkerCategories();
-        }
         ret.addAll(super.getMarkerCategories());
-        ret.addAll(module.getMarkers().stream().map(seg -> getMarkerTitle(aspect, seg)).distinct().collect(Collectors.<String> toList()));
-        IAnalysisModule moduleFutex = getFutexModule(getTrace());
-        if (!(moduleFutex instanceof ISegmentStoreProvider)) {
+        if (set == null) {
             return ret;
         }
-        ISegmentStoreProvider storeProvider = (ISegmentStoreProvider) moduleFutex;
-        ISegmentStore<@NonNull ISegment> segmentStore = storeProvider.getSegmentStore();
-        if (segmentStore != null) {
-            ret.add(getMarkerTitle2());
+        for (InAndOutAnalysis module : set) {
+            if (module == null) {
+                continue;
+            }
+            ISegmentAspect aspect = getNameAspect(module);
+            if (aspect == null) {
+                continue;
+            }
+            ret.addAll(module.getMarkers().stream().map(seg -> getMarkerTitle(aspect, seg)).distinct().collect(Collectors.<String> toList()));
+            IAnalysisModule moduleFutex = getFutexModule(getTrace());
+            if (!(moduleFutex instanceof ISegmentStoreProvider)) {
+                continue;
+            }
+            ISegmentStoreProvider storeProvider = (ISegmentStoreProvider) moduleFutex;
+            ISegmentStore<@NonNull ISegment> segmentStore = storeProvider.getSegmentStore();
+            if (segmentStore != null) {
+                ret.add(getMarkerTitle2());
+            }
         }
         return ret;
     }
 
     @Override
     protected @NonNull List<IMarkerEvent> getViewMarkerList(long startTime, long endTime, long resolution, @NonNull IProgressMonitor monitor) {
-        InAndOutAnalysis module = fAnalyis;
+        Set<InAndOutAnalysis> set = fAnalyis;
         List<IMarkerEvent> ret = new ArrayList<>();
         ret.addAll(super.getViewMarkerList(startTime, endTime, resolution, monitor));
-        if (module == null) {
+        if (set == null) {
             return ret;
         }
-        ISegmentAspect aspect = getNameAspect(module);
-        if (aspect == null) {
-            return ret;
+        for (InAndOutAnalysis module : set) {
+            if (module == null) {
+                continue;
+            }
+            ISegmentAspect aspect = getNameAspect(module);
+            if (aspect == null) {
+                continue;
+            }
+            ret.addAll(
+                    module.getMarkers().stream().map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), getMarkerTitle(aspect, segment), PONTENTION_COLOR, getMarkerTitle(aspect, segment), false)).collect(Collectors.toList()));
+            IAnalysisModule moduleFutex = getFutexModule(getTrace());
+            if (!(moduleFutex instanceof ISegmentStoreProvider)) {
+                continue;
+            }
+            ISegmentStoreProvider storeProvider = (ISegmentStoreProvider) moduleFutex;
+            ISegmentStore<@NonNull ISegment> segmentStore = storeProvider.getSegmentStore();
+            if (segmentStore != null) {
+                ret.addAll(segmentStore.stream()
+                        .filter(segment -> segment.toString().contains("WAKE")) //$NON-NLS-1$
+                        .map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), getMarkerTitle2(), CONTENTION_COLOR, getMarkerTitle2(), false)).collect(Collectors.toList()));
+            }
         }
-        ret.addAll(module.getMarkers().stream().map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), getMarkerTitle(aspect, segment), PONTENTION_COLOR, getMarkerTitle(aspect, segment), false)).collect(Collectors.toList()));
-        IAnalysisModule moduleFutex = getFutexModule(getTrace());
-        if (!(moduleFutex instanceof ISegmentStoreProvider)) {
-            return ret;
-        }
-        ISegmentStoreProvider storeProvider = (ISegmentStoreProvider) moduleFutex;
-        ISegmentStore<@NonNull ISegment> segmentStore = storeProvider.getSegmentStore();
-        if (segmentStore != null) {
-            ret.addAll(segmentStore.stream()
-                    .filter(segment -> segment.toString().contains("WAKE")) //$NON-NLS-1$
-                    .map(segment -> new MarkerEvent(null, segment.getStart(), segment.getLength(), getMarkerTitle2(), CONTENTION_COLOR, getMarkerTitle2(), false)).collect(Collectors.toList()));
-        }
-
         return ret;
     }
 
@@ -205,6 +218,12 @@ public class InAndOutChart extends AbstractTimeGraphView {
 
     private static @NonNull String getMarkerTitle(ISegmentAspect aspect, @NonNull ISegment seg) {
         return "Potential block by " + String.valueOf(aspect.resolve(seg)); //$NON-NLS-1$
+    }
+
+    @Override
+    public void traceSelected(TmfTraceSelectedSignal signal) {
+        fAnalyis.clear();
+        super.traceSelected(signal);
     }
 
 }
