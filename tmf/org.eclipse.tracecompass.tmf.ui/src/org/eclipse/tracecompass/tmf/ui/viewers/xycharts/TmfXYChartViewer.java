@@ -16,6 +16,7 @@ package org.eclipse.tracecompass.tmf.ui.viewers.xycharts;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -43,6 +44,7 @@ public abstract class TmfXYChartViewer extends TmfTimeViewer implements ITmfChar
     // ------------------------------------------------------------------------
     // Attributes
     // ------------------------------------------------------------------------
+    private final Color fBackgroundColor = Display.getCurrent().getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
     /** The SWT Chart reference */
     private Chart fSwtChart;
     /** The mouse selection provider */
@@ -92,6 +94,8 @@ public abstract class TmfXYChartViewer extends TmfTimeViewer implements ITmfChar
                 fSwtChart.getPlotArea().setFocus();
             }
         });
+
+        fSwtChart.setBackgroundInPlotArea(fBackgroundColor);
 
         IAxis xAxis = fSwtChart.getAxisSet().getXAxis(0);
         IAxis yAxis = fSwtChart.getAxisSet().getYAxis(0);

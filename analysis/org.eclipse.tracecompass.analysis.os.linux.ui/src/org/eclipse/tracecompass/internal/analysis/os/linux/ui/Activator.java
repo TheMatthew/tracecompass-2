@@ -103,13 +103,13 @@ public class Activator extends AbstractUIPlugin {
         TmfColorRegistry.getInstance().register("IRQ", 0xff, 0xdc, 0x00, 0xff); //$NON-NLS-1$
         /** Worker has been preempted */
         TmfColorRegistry.getInstance().register("THREAD_WAIT_BLOCKED", 0xc8, 0x64, 0, 255); //$NON-NLS-1$
-        TmfColorRegistry.getInstance().register("WAIT_BLOCKED", 0xc8, 0x64, 0, 255); //$NON-NLS-1$
+        TmfColorRegistry.getInstance().register("WAIT_FOR_CPU", 0xc8, 0x64, 0, 255); //$NON-NLS-1$
 
         TmfColorRegistry.getInstance().register("THREAD_UNKNOWN", 0x40, 0x3b, 0x33, 0xff); //$NON-NLS-1$
 
         TmfColorRegistry.getInstance().register("UNKNOWN", 200, 200, 200, 255); //$NON-NLS-1$
         TmfColorRegistry.getInstance().register("WAIT_UNKNOWN", 200, 200, 200, 255); //$NON-NLS-1$
-        TmfColorRegistry.getInstance().register("WAIT_FOR_CPU", 160, 160, 30, 255); //$NON-NLS-1$
+        TmfColorRegistry.getInstance().register("WAIT_BLOCKED", 160, 160, 30, 255); //$NON-NLS-1$
         TmfColorRegistry.getInstance().register("THREAD_", 200, 100, 0, 255); //$NON-NLS-1$
 
         TmfColorRegistry.getInstance().register("IDLE", 200, 200, 200, 0xff); //$NON-NLS-1$

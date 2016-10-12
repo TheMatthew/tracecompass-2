@@ -69,6 +69,9 @@ public final class TmfColorRegistry {
 
     public RGB getColor(String colorName) {
         RGBA color = getColorRGBA(colorName);
+        if( colorName.equals("WAIT_FOR_CPU")){
+            new Object();
+        }
         if (color == null) {
             return null;
         }
