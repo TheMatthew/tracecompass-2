@@ -168,14 +168,6 @@ public class ChromiumCallStackProvider extends CallStackStateProvider {
         default:
             return;
         }
-        if (Phase.Complete.equals(ph)) {
-            /* Check if the event is a function entry */
-
-
-
-            return;
-        }
-
     }
 
     private void startHandle(ITmfEvent event, ITmfStateSystemBuilder ss, long timestamp, String processName, ITmfStateValue functionEntryName) {

@@ -39,11 +39,6 @@ public class ChromiumCallstackAnalysis extends CallStackAnalysis {
     }
 
     @Override
-    protected @NonNull StateSystemBackendType getBackendType() {
-        return StateSystemBackendType.INMEM;
-    }
-
-    @Override
     protected ChromiumTrace getTrace() {
         return (ChromiumTrace) super.getTrace();
     }
