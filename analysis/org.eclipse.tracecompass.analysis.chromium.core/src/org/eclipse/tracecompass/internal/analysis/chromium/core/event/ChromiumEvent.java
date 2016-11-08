@@ -2,6 +2,7 @@ package org.eclipse.tracecompass.internal.analysis.chromium.core.event;
 
 import java.io.IOException;
 
+import org.eclipse.tracecompass.internal.analysis.chromium.core.event.ChromiumFields.Phase;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEventType;
 import org.eclipse.tracecompass.tmf.core.event.TmfEvent;
@@ -31,7 +32,7 @@ public final class ChromiumEvent extends TmfEvent {
     public static ITmfEvent parse(ITmfTrace trace, long rank, JsonParser jsonParser)
             throws JsonParseException, IOException {
         int tid = -1;
-        int pid = -1;
+        String pid = null;
         ITmfTimestamp ts = null;
         long duration = -1;
         char ph = '-';
@@ -45,33 +46,31 @@ public final class ChromiumEvent extends TmfEvent {
         while (!token.equals(JsonToken.END_OBJECT)) {
             if (token.equals(JsonToken.FIELD_NAME)) {
                 String fieldName = jsonParser.getCurrentName();
+                token = jsonParser.nextValue();
                 switch (fieldName) {
                 case "dur":
-                    token = jsonParser.nextValue();
                     duration = parseTs(jsonParser.getText());
                     break;
                 case "ts":
-                    token = jsonParser.nextValue();
                     ts = TmfTimestamp.fromNanos(parseTs(jsonParser.getText()));
                     break;
                 case "tid":
-                    tid = jsonParser.nextIntValue(-1);
+                    tid = jsonParser.getValueAsInt(-1);
                     break;
                 case "pid":
-                    pid = jsonParser.nextIntValue(-1);
+                    pid = jsonParser.getValueAsString();
                     break;
                 case "ph": // phase
-                    token = jsonParser.nextValue();
-                    ph = fieldName.charAt(0);
+                    ph = jsonParser.getValueAsString().charAt(0);
                     break;
                 case "name":
-                    name = jsonParser.nextTextValue();
+                    name = jsonParser.getValueAsString();
                     break;
                 case "cat":
-                    name = jsonParser.nextTextValue();
+                    name = jsonParser.getValueAsString();
                     break;
                 case "id":
-                    id = jsonParser.nextIntValue(-1);
+                    id = jsonParser.getValueAsInt(-1);
                     break;
                 default:
                     throw new IllegalStateException(fieldName);
@@ -121,5 +120,9 @@ public final class ChromiumEvent extends TmfEvent {
         CHAR_ARRAY['8'] = 8;
         CHAR_ARRAY['9'] = 9;
         CHAR_ARRAY['.'] = Integer.MIN_VALUE;
+    }
+
+    public Phase getPhase() {
+        return ((ChromiumFields)getContent()).getPh();
     }
 }

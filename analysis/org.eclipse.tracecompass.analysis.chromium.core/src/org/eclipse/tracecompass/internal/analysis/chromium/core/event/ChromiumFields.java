@@ -23,18 +23,18 @@ public class ChromiumFields implements ITmfEventField {
 
     private final String fName;
     private final Integer fTid;
-    private final Integer fPid;
+    private final String fPid;
     private final Character fPh;
     private final Long fDuration;
     private final Integer fId;
     private final Collection<String> fCat;
 
-    public ChromiumFields(String name, String cat, int tid, int pid, char ph, int id, long duration) {
+    public ChromiumFields(String name, String cat, int tid, String pid, char ph, int id, long duration) {
         super();
         fName = name;
         fCat = cat == null ? null : Arrays.asList(cat.split(","));
         fTid = tid;
-        fPid = pid;
+        fPid = pid != null ? pid.intern() : null;
         fPh = ph;
         fDuration = duration;
         fId = id;
@@ -76,7 +76,7 @@ public class ChromiumFields implements ITmfEventField {
         if (fieldName.equals("tid") && type.equals(Integer.class)) {
             return (@Nullable T) fTid;
         }
-        if (fieldName.equals("pid") && type.equals(Integer.class)) {
+        if (fieldName.equals("pid") && type.equals(String.class)) {
             return (@Nullable T) fPid;
         }
         if (fieldName.equals("id") && type.equals(Integer.class)) {
@@ -119,7 +119,7 @@ public class ChromiumFields implements ITmfEventField {
         if (fFields == null) {
             fFields = new ITmfEventField[getFieldNames().size()];
             fFields[0] = new TmfEventField("tid", fTid, null);
-            fFields[1] = new TmfEventField("pid", fPid, null);
+            fFields[1] = fPid == null ? null : new TmfEventField("pid", fPid, null);
             Phase value = PHASES[fPh];
             fFields[2] = value == null ? null : new TmfEventField("ph", value, null);
             fFields[3] = fId == -1 ? null : new TmfEventField("id", fId, null);
@@ -144,5 +144,9 @@ public class ChromiumFields implements ITmfEventField {
     @Override
     public String toString() {
         return getFormattedValue();
+    }
+
+    public Phase getPh() {
+        return PHASES[fPh];
     }
 }
