@@ -149,4 +149,8 @@ public class ChromiumFields implements ITmfEventField {
     public Phase getPh() {
         return PHASES[fPh];
     }
+
+    public Long getDuration() {
+        return fDuration;
+    }
 }

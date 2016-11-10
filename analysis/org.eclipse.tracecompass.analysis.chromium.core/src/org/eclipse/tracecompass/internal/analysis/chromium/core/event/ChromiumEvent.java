@@ -122,7 +122,15 @@ public final class ChromiumEvent extends TmfEvent {
         CHAR_ARRAY['.'] = Integer.MIN_VALUE;
     }
 
+    public ITmfTimestamp getEndTime() {
+        Long dur = ((ChromiumFields) getContent()).getDuration();
+        if (dur == -1L) {
+            dur = 0L;
+        }
+        return TmfTimestamp.fromNanos(dur + getTimestamp().toNanos());
+    }
+
     public Phase getPhase() {
-        return ((ChromiumFields)getContent()).getPh();
+        return ((ChromiumFields) getContent()).getPh();
     }
 }
