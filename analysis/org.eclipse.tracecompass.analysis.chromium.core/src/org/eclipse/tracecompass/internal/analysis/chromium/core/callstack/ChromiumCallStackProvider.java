@@ -141,6 +141,12 @@ public class ChromiumCallStackProvider extends CallStackStateProvider {
         }
     }
 
+    /**
+     * This handles phase "complete" elements. They arrive by end time first, some some flipping is being performed.
+     * @param event
+     * @param ss
+     * @param processName
+     */
     private void handleComplete(ChromiumEvent event, ITmfStateSystemBuilder ss, String processName) {
 
         ITmfTimestamp timestamp = event.getTimestamp();
