@@ -105,7 +105,7 @@ public class ChromiumCallStackProvider extends CallStackStateProvider {
             if (!stack.isEmpty()) {
                 Long closeCandidate = stack.pop();
                 while (closeCandidate != null && closeCandidate < timestamp) {
-                    ss.modifyAttribute(closeCandidate, TmfStateValue.nullValue(), stackEntry.getKey());
+                    ss.popAttribute(closeCandidate, stackEntry.getKey());
                     closeCandidate = (stack.isEmpty()) ? null : stack.pop();
                 }
                 if (closeCandidate != null) {
@@ -232,7 +232,7 @@ public class ChromiumCallStackProvider extends CallStackStateProvider {
             if (!stack.isEmpty()) {
                 Long closeCandidate = stack.pop();
                 while (closeCandidate != null) {
-                    ss.modifyAttribute(closeCandidate, TmfStateValue.nullValue(), stackEntry.getKey());
+                    ss.popAttribute(closeCandidate, stackEntry.getKey());
                     closeCandidate = (stack.isEmpty()) ? null : stack.pop();
                 }
             }
