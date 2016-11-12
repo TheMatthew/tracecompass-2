@@ -2,18 +2,16 @@ package org.eclipse.tracecompass.internal.analysis.chromium.core.callstack;
 
 import static org.eclipse.tracecompass.common.core.NonNullUtils.checkNotNull;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Stack;
+import java.util.TreeMap;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.tracecompass.internal.analysis.chromium.core.Activator;
 import org.eclipse.tracecompass.internal.analysis.chromium.core.event.ChromiumEvent;
 import org.eclipse.tracecompass.internal.analysis.chromium.core.event.ChromiumFields.Phase;
 import org.eclipse.tracecompass.statesystem.core.ITmfStateSystemBuilder;
-import org.eclipse.tracecompass.statesystem.core.exceptions.StateSystemDisposedException;
-import org.eclipse.tracecompass.statesystem.core.interval.ITmfStateInterval;
 import org.eclipse.tracecompass.statesystem.core.statevalue.ITmfStateValue;
 import org.eclipse.tracecompass.statesystem.core.statevalue.TmfStateValue;
 import org.eclipse.tracecompass.tmf.core.callstack.CallStackStateProvider;
@@ -23,14 +21,9 @@ import org.eclipse.tracecompass.tmf.core.trace.ITmfTrace;
 
 public class ChromiumCallStackProvider extends CallStackStateProvider {
 
-    private PriorityQueue<ChromiumEvent> fEventBuffer = new PriorityQueue<>(new Comparator<ChromiumEvent>() {
-        @Override
-        public int compare(ChromiumEvent o1, ChromiumEvent o2) {
-            return o1.getTimestamp().compareTo(o2.getTimestamp());
-        }
-    });
-
     private ITmfTimestamp fSafeTime;
+
+    private Map<Integer, Stack<Long>> fStack = new TreeMap<>();
 
     public ChromiumCallStackProvider(@NonNull ITmfTrace trace) {
         super(trace);
@@ -44,7 +37,14 @@ public class ChromiumCallStackProvider extends CallStackStateProvider {
 
     @Override
     protected @Nullable String getProcessName(@NonNull ITmfEvent event) {
-        return event.getContent().getFieldValue(String.class, "pid");
+        String pName = event.getContent().getFieldValue(String.class, "pid");
+
+        if (pName == null) {
+            int processId = getProcessId(event);
+            pName = (processId == UNKNOWN_PID) ? UNKNOWN : Integer.toString(processId);
+        }
+
+        return pName;
     }
 
     @Override
@@ -100,12 +100,26 @@ public class ChromiumCallStackProvider extends CallStackStateProvider {
 
         /* Check if the event is a function entry */
         long timestamp = event.getTimestamp().toNanos();
+        for (Entry<Integer, Stack<Long>> stackEntry : fStack.entrySet()) {
+            Stack<Long> stack = stackEntry.getValue();
+            if (!stack.isEmpty()) {
+                Long closeCandidate = stack.pop();
+                while (closeCandidate != null && closeCandidate < timestamp) {
+                    ss.modifyAttribute(closeCandidate, TmfStateValue.nullValue(), stackEntry.getKey());
+                    closeCandidate = (stack.isEmpty()) ? null : stack.pop();
+                }
+                if (closeCandidate != null) {
+                    stack.push(closeCandidate);
+                }
+            }
+        }
         ChromiumEvent chrEvent = (ChromiumEvent) event;
         String processName = getProcessName(event);
         Phase ph = chrEvent.getPhase();
         if (ph == null) {
             return;
         }
+
         switch (ph) {
         case Begin:
             ITmfStateValue functionBeginName = functionEntry(event);
@@ -142,7 +156,9 @@ public class ChromiumCallStackProvider extends CallStackStateProvider {
     }
 
     /**
-     * This handles phase "complete" elements. They arrive by end time first, some some flipping is being performed.
+     * This handles phase "complete" elements. They arrive by end time first,
+     * some some flipping is being performed.
+     *
      * @param event
      * @param ss
      * @param processName
@@ -151,51 +167,31 @@ public class ChromiumCallStackProvider extends CallStackStateProvider {
 
         ITmfTimestamp timestamp = event.getTimestamp();
         fSafeTime = fSafeTime.compareTo(timestamp) > 0 ? fSafeTime : timestamp;
-        fEventBuffer.add(event);
-        while (!fEventBuffer.isEmpty() && fEventBuffer.peek().getEndTime().compareTo(fSafeTime) < 0) {
-            ChromiumEvent eventToWrite = fEventBuffer.poll();
-            if (eventToWrite == null) {
-                return;
-            }
-            String processName_ = processName;
-            if (processName_ == null) {
-                int processId = getProcessId(eventToWrite);
-                processName_ = (processId == UNKNOWN_PID) ? UNKNOWN : Integer.toString(processId).intern();
-            }
-            int processQuark = ss.getQuarkAbsoluteAndAdd(PROCESSES, processName_);
-            long startTime = eventToWrite.getTimestamp().toNanos();
-            long end = eventToWrite.getEndTime().toNanos();
-            String threadName = getThreadName(eventToWrite);
-            long threadId = getThreadId(eventToWrite);
-            if (threadName == null) {
-                threadName = Long.toString(threadId).intern();
-            }
-            int threadQuark = ss.getQuarkRelativeAndAdd(processQuark, threadName);
-
-            int callStackQuark = ss.getQuarkRelativeAndAdd(threadQuark, CALL_STACK);
-            ITmfStateValue value = TmfStateValue.newValueString(eventToWrite.getName());
-
-            List<Integer> subs = ss.getSubAttributes(callStackQuark, false);
-            try {
-                if (end < ss.getCurrentEndTime()) {
-                    List<@NonNull ITmfStateInterval> stateValues = ss.queryFullState(startTime);
-                    for (int sub : subs) {
-                        if (stateValues.get(sub).getStateValue().isNull()) {
-                            writeSegmentToSs(ss, startTime, end, value, sub);
-                            return;
-                        }
-                    }
-                    int quark = ss.getQuarkRelativeAndAdd(callStackQuark, Integer.toString(subs.size() + 1));
-                    writeSegmentToSs(ss, startTime, end, value, quark);
-                    return;
-                }
-                int quark = ss.getQuarkRelativeAndAdd(callStackQuark, "1"); //$NON-NLS-1$
-                writeSegmentToSs(ss, startTime, end, value, quark);
-
-            } catch (StateSystemDisposedException e) {
-                Activator.getInstance().logError(e.getMessage(), e);
-            }
+        String processName_ = processName;
+        if (processName_ == null) {
+            int processId = getProcessId(event);
+            processName_ = (processId == UNKNOWN_PID) ? UNKNOWN : Integer.toString(processId).intern();
         }
+        int processQuark = ss.getQuarkAbsoluteAndAdd(PROCESSES, processName_);
+        long startTime = event.getTimestamp().toNanos();
+        long end = event.getEndTime().toNanos();
+        String threadName = getThreadName(event);
+        long threadId = getThreadId(event);
+        if (threadName == null) {
+            threadName = Long.toString(threadId).intern();
+        }
+        int threadQuark = ss.getQuarkRelativeAndAdd(processQuark, threadName);
+
+        int callStackQuark = ss.getQuarkRelativeAndAdd(threadQuark, CALL_STACK);
+        ITmfStateValue functionEntry = TmfStateValue.newValueString(event.getName());
+        ss.pushAttribute(startTime, functionEntry, callStackQuark);
+        Stack<Long> stack = fStack.get(callStackQuark);
+        if (stack == null) {
+            stack = new Stack<>();
+            fStack.put(callStackQuark, stack);
+        }
+        stack.push(end);
+
     }
 
     private void startHandle(ITmfEvent event, ITmfStateSystemBuilder ss, long timestamp, String processName, ITmfStateValue functionEntryName) {
@@ -224,12 +220,23 @@ public class ChromiumCallStackProvider extends CallStackStateProvider {
         if (threadName == null) {
             threadName = Long.toString(getThreadId(event));
         }
-        int quark = ss.getQuarkAbsoluteAndAdd(PROCESSES, processName, threadName, CALL_STACK);
+        int quark = ss.getQuarkAbsoluteAndAdd(PROCESSES, pName, threadName, CALL_STACK);
         ss.popAttribute(timestamp, quark);
     }
 
-    protected void writeSegmentToSs(@NonNull ITmfStateSystemBuilder ss, long startTime, long endTime, @NonNull ITmfStateValue value, int quark) {
-        ss.modifyAttribute(startTime, value, quark);
-        ss.modifyAttribute(endTime, TmfStateValue.nullValue(), quark);
+    @Override
+    public void done() {
+        ITmfStateSystemBuilder ss = checkNotNull(getStateSystemBuilder());
+        for (Entry<Integer, Stack<Long>> stackEntry : fStack.entrySet()) {
+            Stack<Long> stack = stackEntry.getValue();
+            if (!stack.isEmpty()) {
+                Long closeCandidate = stack.pop();
+                while (closeCandidate != null) {
+                    ss.modifyAttribute(closeCandidate, TmfStateValue.nullValue(), stackEntry.getKey());
+                    closeCandidate = (stack.isEmpty()) ? null : stack.pop();
+                }
+            }
+        }
+        super.done();
     }
 }
